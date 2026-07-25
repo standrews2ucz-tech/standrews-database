@@ -391,7 +391,7 @@
         <select id="memberSectionSelect"></select>
       </div>
 
-      <div class="subhead">Add a member</div>
+      <div class="subhead" id="memberFormHeading">Add a member</div>
       <form id="memberForm" class="form-grid">
         <div>
           <label for="m_surname">Surname</label>
@@ -496,12 +496,13 @@
         <div class="field-full">
           <div class="msg" id="memberMsg"></div>
           <button type="submit" id="memberBtn">Add member</button>
+          <button type="button" id="cancelEditBtn" class="logout-btn" style="display:none; margin-left:8px;">Cancel edit</button>
         </div>
       </form>
 
       <div class="subhead">Members in this section</div>
       <table class="data-table" id="membersTable">
-        <thead><tr><th>Surname</th><th>First name</th><th>Status</th><th>Joined section</th></tr></thead>
+        <thead><tr><th>Surname</th><th>First name</th><th>Status</th><th>Joined section</th><th>Actions</th></tr></thead>
         <tbody id="membersTableBody"></tbody>
       </table>
     </div>
@@ -536,6 +537,7 @@
   let currentUser = null;       // { id, username, role, congregation_id, section_id }
   let congregationsCache = [];  // [{id, name}]
   let sectionsCache = [];       // [{id, name, congregation_id, congregation_name}]
+  let editingMemberId = null;   // set while the member form is editing an existing row instead of creating one
 
   function showError(text) {
     loginMsg.textContent = text;
@@ -764,23 +766,82 @@
     await refreshMembersTable();
   }
 
-  document.getElementById("memberSectionSelect").addEventListener("change", refreshMembersTable);
+  document.getElementById("memberSectionSelect").addEventListener("change", () => {
+    exitEditMode();
+    refreshMembersTable();
+  });
 
   async function refreshMembersTable() {
     const sectionId = document.getElementById("memberSectionSelect").value;
     const tbody = document.getElementById("membersTableBody");
-    if (!sectionId) { tbody.innerHTML = `<tr><td colspan="4" style="color:var(--ink-soft);">No section selected.</td></tr>`; return; }
+    if (!sectionId) { tbody.innerHTML = `<tr><td colspan="5" style="color:var(--ink-soft);">No section selected.</td></tr>`; return; }
 
     const { data, error } = await supabaseClient
       .from("members")
-      .select("surname, first_name, membership_status, date_joined_section")
+      .select("*")
       .eq("section_id", sectionId)
       .order("surname");
 
     tbody.innerHTML = (!error && data && data.length)
-      ? data.map(m => `<tr><td>${m.surname}</td><td>${m.first_name}</td><td>${m.membership_status || ""}</td><td>${m.date_joined_section || ""}</td></tr>`).join("")
-      : `<tr><td colspan="4" style="color:var(--ink-soft);">No members yet in this section.</td></tr>`;
+      ? data.map(m => `<tr>
+          <td>${m.surname}</td>
+          <td>${m.first_name}</td>
+          <td>${m.membership_status || ""}</td>
+          <td>${m.date_joined_section || ""}</td>
+          <td><button type="button" class="logout-btn edit-member-btn" data-id="${m.id}" style="padding:6px 12px;font-size:12px;">Edit</button></td>
+        </tr>`).join("")
+      : `<tr><td colspan="5" style="color:var(--ink-soft);">No members yet in this section.</td></tr>`;
+
+    tbody.querySelectorAll(".edit-member-btn").forEach(btn => {
+      btn.addEventListener("click", () => loadMemberIntoForm(btn.dataset.id, data.find(m => m.id == btn.dataset.id)));
+    });
   }
+
+  function loadMemberIntoForm(id, member) {
+    if (!member) return;
+    editingMemberId = id;
+
+    document.getElementById("memberFormHeading").textContent = "Edit " + member.surname + ", " + member.first_name;
+    document.getElementById("memberBtn").textContent = "Save changes";
+    document.getElementById("cancelEditBtn").style.display = "inline-block";
+
+    document.getElementById("m_surname").value = member.surname || "";
+    document.getElementById("m_first_name").value = member.first_name || "";
+    document.getElementById("m_other_name").value = member.other_name || "";
+    document.getElementById("m_gender").value = member.gender || "";
+    document.getElementById("m_membership_status").value = member.membership_status || "";
+    document.getElementById("m_marital_status").value = member.marital_status || "";
+    document.getElementById("m_dob").value = member.date_of_birth || "";
+    document.getElementById("m_pob").value = member.place_of_birth || "";
+    document.getElementById("m_nrc").value = member.nrc_number || "";
+    document.getElementById("m_bc_date").value = member.membership_status === "Full Member"
+      ? (member.date_of_confirmation || "") : (member.date_of_baptism || "");
+    document.getElementById("m_bc_date_label").textContent = member.membership_status === "Full Member"
+      ? "Date of confirmation" : "Date of baptism";
+    document.getElementById("m_bc_place").value = member.place_of_baptism_confirmation || "";
+    document.getElementById("m_bc_minister").value = member.baptizing_confirming_minister || "";
+    document.getElementById("m_date_joined_congregation").value = member.date_joined_congregation || "";
+    document.getElementById("m_position_in_section").value = member.position_in_section || "";
+    document.getElementById("m_date_joined_section").value = member.date_joined_section || "";
+    document.getElementById("m_hymn").value = member.favourite_hymn || "";
+    document.getElementById("m_scripture").value = member.favourite_scripture || "";
+    document.getElementById("m_phone1").value = member.phone_number_1 || "";
+    document.getElementById("m_phone2").value = member.phone_number_2 || "";
+    document.getElementById("m_email").value = member.email || "";
+    document.getElementById("m_whatsapp").value = member.whatsapp || "";
+
+    document.getElementById("memberForm").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function exitEditMode() {
+    editingMemberId = null;
+    document.getElementById("memberForm").reset();
+    document.getElementById("memberFormHeading").textContent = "Add a member";
+    document.getElementById("memberBtn").textContent = "Add member";
+    document.getElementById("cancelEditBtn").style.display = "none";
+  }
+
+  document.getElementById("cancelEditBtn").addEventListener("click", exitEditMode);
 
   // Toggle the shared baptism/confirmation date label based on membership status.
   document.getElementById("m_membership_status").addEventListener("change", (e) => {
@@ -830,18 +891,21 @@
     };
 
     memberBtn.disabled = true;
-    memberBtn.textContent = "Saving...";
+    memberBtn.textContent = editingMemberId ? "Saving..." : "Saving...";
 
-    const { error } = await supabaseClient.from("members").insert(record);
+    const { error } = editingMemberId
+      ? await supabaseClient.from("members").update(record).eq("id", editingMemberId)
+      : await supabaseClient.from("members").insert(record);
 
     memberBtn.disabled = false;
-    memberBtn.textContent = "Add member";
 
     if (error) {
       setMsg(memberMsg, "Error: " + error.message, true);
+      memberBtn.textContent = editingMemberId ? "Save changes" : "Add member";
     } else {
-      setMsg(memberMsg, "Member added.", false);
-      document.getElementById("memberForm").reset();
+      setMsg(memberMsg, editingMemberId ? "Changes saved." : "Member added.", false);
+      const wasEditing = editingMemberId;
+      exitEditMode();
       await refreshMembersTable();
     }
   });
