@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Congregation Database</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1B2A4A;
+    --ink-soft: #3C4A68;
+    --parchment: #F7F3E9;
+    --parchment-deep: #EFE8D8;
+    --gold: #A9803D;
+    --gold-soft: #D8C79B;
+    --error: #9B4030;
+    --radius: 3px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--parchment);
+    background-image:
+      radial-gradient(circle at 15% 15%, rgba(169,128,61,0.06), transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(27,42,74,0.05), transparent 40%);
+    font-family: 'Inter', sans-serif;
+    color: var(--ink);
+    padding: 24px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 400px;
+    background: #FFFFFF;
+    border: 1px solid var(--parchment-deep);
+    border-radius: var(--radius);
+    padding: 44px 40px 36px;
+    box-shadow: 0 20px 50px -25px rgba(27,42,74,0.35);
+  }
+
+  .mark {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .mark-line {
+    width: 28px;
+    height: 1px;
+    background: var(--gold);
+    flex-shrink: 0;
+  }
+
+  .mark-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 600;
+  }
+
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 34px;
+    line-height: 1.15;
+    margin: 0 0 6px;
+    color: var(--ink);
+  }
+
+  .sub {
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin: 0 0 32px;
+    line-height: 1.5;
+  }
+
+  form { display: flex; flex-direction: column; gap: 18px; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--ink-soft);
+    margin-bottom: 7px;
+  }
+
+  input {
+    width: 100%;
+    padding: 12px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    border: 1px solid var(--parchment-deep);
+    border-radius: var(--radius);
+    background: var(--parchment);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  input:focus {
+    border-color: var(--gold);
+    background: #FFFFFF;
+  }
+
+  input:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 1px;
+  }
+
+  button {
+    margin-top: 8px;
+    padding: 13px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #FFFFFF;
+    background: var(--ink);
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  button:hover:not(:disabled) { background: var(--ink-soft); }
+  button:disabled { opacity: 0.6; cursor: default; }
+
+  .msg {
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    display: none;
+  }
+
+  .msg.show { display: block; }
+
+  .msg.error {
+    background: #FBEEEB;
+    color: var(--error);
+    border: 1px solid #F0D4CC;
+  }
+
+  /* ---- Dashboard (post-login) ---- */
+
+  .dash { display: none; }
+  .dash.show { display: block; }
+  .card.dash-mode { max-width: 520px; }
+
+  .dash-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 28px;
+  }
+
+  .dash-head h1 { font-size: 28px; margin-bottom: 4px; }
+
+  .role-pill {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--gold);
+    background: #FAF5EA;
+    border: 1px solid var(--gold-soft);
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+
+  .logout-btn {
+    background: none;
+    color: var(--ink-soft);
+    border: 1px solid var(--parchment-deep);
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 0;
+    width: auto;
+  }
+
+  .logout-btn:hover:not(:disabled) { background: var(--parchment); color: var(--ink); }
+
+  .empty-state {
+    border: 1px dashed var(--parchment-deep);
+    border-radius: var(--radius);
+    padding: 28px 20px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .empty-state strong { color: var(--ink); }
+</style>
+</head>
+<body>
+
+  <div class="card" id="loginCard">
+    <div class="mark">
+      <div class="mark-line"></div>
+      <div class="mark-text">Congregation Database</div>
+    </div>
+    <h1>Sign in</h1>
+    <p class="sub">Enter the username and password given to you by your administrator.</p>
+
+    <form id="loginForm">
+      <div>
+        <label for="username">Username</label>
+        <input type="text" id="username" autocomplete="username" required autocapitalize="off" spellcheck="false">
+      </div>
+      <div>
+        <label for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password" required>
+      </div>
+      <div class="msg error" id="loginMsg"></div>
+      <button type="submit" id="loginBtn">Sign in</button>
+    </form>
+  </div>
+
+  <div class="card dash-mode dash" id="dashCard">
+    <div class="dash-head">
+      <div>
+        <h1 id="welcomeName">Welcome</h1>
+        <span class="role-pill" id="rolePill">Role</span>
+      </div>
+      <button class="logout-btn" id="logoutBtn">Sign out</button>
+    </div>
+    <div class="empty-state">
+      This is a starter login screen. <strong>Member records, offering entry,
+      and reports</strong> will be built as separate screens and linked in
+      from here, based on the role shown above.
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ---------------------------------------------------------------
+  // CONFIGURE THESE TWO VALUES before deploying
+  // Found in Supabase: Project Settings -> API Keys
+  // ---------------------------------------------------------------
+  const SUPABASE_URL = "https://lvvpfohejrleryyhvfqx.supabase.co";
+  const SUPABASE_ANON_KEY = "PASTE_YOUR_PUBLISHABLE_KEY_HERE"; // sb_publishable_...
+
+  // Must exactly match the fake domain used when creating logins in
+  // Supabase Authentication -> Users (see DEPLOYMENT.md).
+  const AUTH_EMAIL_DOMAIN = "congregation.local";
+  // ---------------------------------------------------------------
+
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const loginCard = document.getElementById("loginCard");
+  const dashCard = document.getElementById("dashCard");
+  const loginForm = document.getElementById("loginForm");
+  const loginBtn = document.getElementById("loginBtn");
+  const loginMsg = document.getElementById("loginMsg");
+  const welcomeName = document.getElementById("welcomeName");
+  const rolePill = document.getElementById("rolePill");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  function showError(text) {
+    loginMsg.textContent = text;
+    loginMsg.classList.add("show");
+  }
+
+  function clearError() {
+    loginMsg.classList.remove("show");
+    loginMsg.textContent = "";
+  }
+
+  async function showDashboard(authUser) {
+    const { data, error } = await supabaseClient
+      .from("users")
+      .select("username, role")
+      .eq("auth_id", authUser.id)
+      .single();
+
+    if (error || !data) {
+      showError("Signed in, but no matching record was found in the users table. Ask your administrator to link your account.");
+      await supabaseClient.auth.signOut();
+      return;
+    }
+
+    welcomeName.textContent = "Welcome, " + data.username;
+    rolePill.textContent = data.role;
+    loginCard.style.display = "none";
+    dashCard.classList.add("show");
+  }
+
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    clearError();
+    loginBtn.disabled = true;
+    loginBtn.textContent = "Signing in...";
+
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+    const email = username + "@" + AUTH_EMAIL_DOMAIN;
+
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+    loginBtn.disabled = false;
+    loginBtn.textContent = "Sign in";
+
+    if (error) {
+      showError("Incorrect username or password.");
+      return;
+    }
+
+    await showDashboard(data.user);
+  });
+
+  logoutBtn.addEventListener("click", async () => {
+    await supabaseClient.auth.signOut();
+    dashCard.classList.remove("show");
+    loginCard.style.display = "block";
+    loginForm.reset();
+  });
+
+  // If a session already exists (e.g. page refresh), skip straight to the dashboard.
+  (async () => {
+    const { data } = await supabaseClient.auth.getSession();
+    if (data.session) {
+      await showDashboard(data.session.user);
+    }
+  })();
+</script>
+
+</body>
+</html>
