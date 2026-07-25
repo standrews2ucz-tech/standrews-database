@@ -204,6 +204,89 @@
   }
 
   .empty-state strong { color: var(--ink); }
+
+  /* ---- Setup / Members screens ---- */
+
+  .dash.wide { max-width: 780px; }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--parchment-deep);
+    margin-bottom: 24px;
+  }
+
+  .tab-btn {
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    background: none;
+    border: none;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-top: 0;
+    width: auto;
+  }
+
+  .tab-btn.active { color: var(--ink); border-bottom-color: var(--gold); }
+  .tab-btn:hover:not(.active) { background: var(--parchment); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .subhead {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 20px;
+    margin: 28px 0 12px;
+    color: var(--ink);
+  }
+
+  .subhead:first-child { margin-top: 0; }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+  }
+
+  .field-full { grid-column: 1 / -1; }
+
+  select {
+    width: 100%;
+    padding: 12px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    border: 1px solid var(--parchment-deep);
+    border-radius: var(--radius);
+    background: var(--parchment);
+    color: var(--ink);
+    outline: none;
+  }
+
+  select:focus { border-color: var(--gold); background: #FFFFFF; }
+
+  .inline-row { display: flex; gap: 10px; align-items: flex-end; }
+  .inline-row > div { flex: 1; }
+  .inline-row button { margin-top: 0; flex-shrink: 0; width: auto; padding: 12px 18px; }
+
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 14px; }
+  .data-table th, .data-table td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--parchment-deep); }
+  .data-table th { color: var(--ink-soft); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .data-table tr:last-child td { border-bottom: none; }
+
+  .msg.success {
+    background: #EFF6EE;
+    color: #3C6B3E;
+    border: 1px solid #CBE3C9;
+  }
+
+  .field-note {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin: -6px 0 0;
+  }
 </style>
 </head>
 <body>
@@ -234,7 +317,7 @@
     </form>
   </div>
 
-  <div class="card dash-mode dash" id="dashCard">
+  <div class="card dash-mode dash wide" id="dashCard">
     <div class="dash-head">
       <div>
         <h1 id="welcomeName">Welcome</h1>
@@ -242,11 +325,187 @@
       </div>
       <button class="logout-btn" id="logoutBtn">Sign out</button>
     </div>
-    <div class="empty-state">
-      This is a starter login screen. <strong>Member records, offering entry,
-      and reports</strong> will be built as separate screens and linked in
-      from here, based on the role shown above.
+
+    <div class="tabs" id="tabBar">
+      <button class="tab-btn active" data-panel="setupPanel" id="tabSetupBtn">Organization Setup</button>
+      <button class="tab-btn" data-panel="membersPanel" id="tabMembersBtn">Members</button>
     </div>
+
+    <!-- ---------- SETUP PANEL (Admin only) ---------- -->
+    <div class="panel active" id="setupPanel">
+
+      <div class="subhead">Quick setup</div>
+      <p class="field-note" style="margin-bottom:14px;">
+        Creates (or reuses, if the name already exists) the Presbytery,
+        Consistory, Church, and Congregation in one step.
+      </p>
+      <form id="orgForm" class="form-grid">
+        <div>
+          <label for="presbyteryName">Presbytery</label>
+          <input type="text" id="presbyteryName" required>
+        </div>
+        <div>
+          <label for="consistoryName">Consistory</label>
+          <input type="text" id="consistoryName" required>
+        </div>
+        <div>
+          <label for="churchName">Church</label>
+          <input type="text" id="churchName" required>
+        </div>
+        <div>
+          <label for="congregationName">Congregation</label>
+          <input type="text" id="congregationName" required>
+        </div>
+        <div class="field-full">
+          <div class="msg" id="orgMsg"></div>
+          <button type="submit" id="orgBtn">Create / update</button>
+        </div>
+      </form>
+
+      <div class="subhead">Sections</div>
+      <div class="inline-row" style="margin-bottom:10px;">
+        <div>
+          <label for="sectionCongregationSelect">Congregation</label>
+          <select id="sectionCongregationSelect"></select>
+        </div>
+      </div>
+      <div class="inline-row">
+        <div>
+          <label for="newSectionName">New section name</label>
+          <input type="text" id="newSectionName" placeholder="e.g. Section 1">
+        </div>
+        <button type="button" id="addSectionBtn">Add section</button>
+      </div>
+      <div class="msg" id="sectionMsg"></div>
+      <table class="data-table" id="sectionsTable">
+        <thead><tr><th>Section</th></tr></thead>
+        <tbody id="sectionsTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- ---------- MEMBERS PANEL ---------- -->
+    <div class="panel" id="membersPanel">
+
+      <div id="memberSectionPicker" style="margin-bottom:18px;">
+        <label for="memberSectionSelect">Section</label>
+        <select id="memberSectionSelect"></select>
+      </div>
+
+      <div class="subhead">Add a member</div>
+      <form id="memberForm" class="form-grid">
+        <div>
+          <label for="m_surname">Surname</label>
+          <input type="text" id="m_surname" required>
+        </div>
+        <div>
+          <label for="m_first_name">First name</label>
+          <input type="text" id="m_first_name" required>
+        </div>
+        <div>
+          <label for="m_other_name">Other name</label>
+          <input type="text" id="m_other_name">
+        </div>
+        <div>
+          <label for="m_gender">Gender</label>
+          <select id="m_gender" required>
+            <option value="">Select...</option>
+            <option>Male</option>
+            <option>Female</option>
+          </select>
+        </div>
+        <div>
+          <label for="m_membership_status">Membership status</label>
+          <select id="m_membership_status" required>
+            <option value="">Select...</option>
+            <option>Full Member</option>
+            <option>Catechumen Member</option>
+            <option>Sunday School</option>
+            <option>Adherent</option>
+          </select>
+        </div>
+        <div>
+          <label for="m_marital_status">Marital status</label>
+          <select id="m_marital_status">
+            <option value="">Select...</option>
+            <option>Single</option>
+            <option>Married</option>
+            <option>Widowed</option>
+            <option>Divorced</option>
+          </select>
+        </div>
+        <div>
+          <label for="m_dob">Date of birth</label>
+          <input type="date" id="m_dob">
+        </div>
+        <div>
+          <label for="m_pob">Place of birth</label>
+          <input type="text" id="m_pob">
+        </div>
+        <div>
+          <label for="m_nrc">NRC number</label>
+          <input type="text" id="m_nrc">
+        </div>
+        <div>
+          <label id="m_bc_date_label" for="m_bc_date">Date of baptism / confirmation</label>
+          <input type="date" id="m_bc_date">
+        </div>
+        <div>
+          <label for="m_bc_place">Place of baptism / confirmation</label>
+          <input type="text" id="m_bc_place">
+        </div>
+        <div>
+          <label for="m_bc_minister">Baptizing / confirming minister</label>
+          <input type="text" id="m_bc_minister">
+        </div>
+        <div>
+          <label for="m_date_joined_congregation">Date joined congregation</label>
+          <input type="date" id="m_date_joined_congregation">
+        </div>
+        <div>
+          <label for="m_position_in_section">Position in section</label>
+          <input type="text" id="m_position_in_section">
+        </div>
+        <div>
+          <label for="m_date_joined_section">Date joined section</label>
+          <input type="date" id="m_date_joined_section">
+        </div>
+        <div>
+          <label for="m_hymn">Favourite hymn</label>
+          <input type="text" id="m_hymn">
+        </div>
+        <div>
+          <label for="m_scripture">Favourite scripture</label>
+          <input type="text" id="m_scripture">
+        </div>
+        <div>
+          <label for="m_phone1">Phone number 1</label>
+          <input type="text" id="m_phone1">
+        </div>
+        <div>
+          <label for="m_phone2">Phone number 2</label>
+          <input type="text" id="m_phone2">
+        </div>
+        <div>
+          <label for="m_email">Email</label>
+          <input type="email" id="m_email">
+        </div>
+        <div>
+          <label for="m_whatsapp">WhatsApp</label>
+          <input type="text" id="m_whatsapp">
+        </div>
+        <div class="field-full">
+          <div class="msg" id="memberMsg"></div>
+          <button type="submit" id="memberBtn">Add member</button>
+        </div>
+      </form>
+
+      <div class="subhead">Members in this section</div>
+      <table class="data-table" id="membersTable">
+        <thead><tr><th>Surname</th><th>First name</th><th>Status</th><th>Joined section</th></tr></thead>
+        <tbody id="membersTableBody"></tbody>
+      </table>
+    </div>
+
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -274,6 +533,10 @@
   const rolePill = document.getElementById("rolePill");
   const logoutBtn = document.getElementById("logoutBtn");
 
+  let currentUser = null;       // { id, username, role, congregation_id, section_id }
+  let congregationsCache = [];  // [{id, name}]
+  let sectionsCache = [];       // [{id, name, congregation_id, congregation_name}]
+
   function showError(text) {
     loginMsg.textContent = text;
     loginMsg.classList.add("show");
@@ -284,10 +547,20 @@
     loginMsg.textContent = "";
   }
 
+  function setMsg(el, text, isError) {
+    el.textContent = text;
+    el.classList.remove("show", "error", "success");
+    el.classList.add("show", isError ? "error" : "success");
+  }
+
+  // ---------------------------------------------------------------
+  // Login / session
+  // ---------------------------------------------------------------
+
   async function showDashboard(authUser) {
     const { data, error } = await supabaseClient
       .from("users")
-      .select("username, role")
+      .select("id, username, role, congregation_id, section_id")
       .eq("auth_id", authUser.id)
       .single();
 
@@ -297,10 +570,21 @@
       return;
     }
 
+    currentUser = data;
     welcomeName.textContent = "Welcome, " + data.username;
     rolePill.textContent = data.role;
     loginCard.style.display = "none";
     dashCard.classList.add("show");
+
+    const canSetup = (data.role === "Admin");
+    document.getElementById("tabSetupBtn").style.display = canSetup ? "inline-block" : "none";
+    if (!canSetup) {
+      switchPanel("membersPanel");
+    }
+
+    await refreshCongregations();
+    await refreshSections();
+    await refreshMemberSectionPicker();
   }
 
   loginForm.addEventListener("submit", async (e) => {
@@ -335,6 +619,231 @@
     dashCard.classList.remove("show");
     loginCard.style.display = "block";
     loginForm.reset();
+    currentUser = null;
+  });
+
+  // ---------------------------------------------------------------
+  // Tabs
+  // ---------------------------------------------------------------
+
+  function switchPanel(panelId) {
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.getElementById(panelId).classList.add("active");
+    document.querySelector('.tab-btn[data-panel="' + panelId + '"]').classList.add("active");
+  }
+
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => switchPanel(btn.dataset.panel));
+  });
+
+  // ---------------------------------------------------------------
+  // Organization setup (Admin only)
+  // ---------------------------------------------------------------
+
+  // Finds a row matching `match`, or inserts `insertData` if none exists. Returns the row's id.
+  async function findOrCreate(table, match, insertData) {
+    const { data: existing } = await supabaseClient.from(table).select("id").match(match).maybeSingle();
+    if (existing) return existing.id;
+    const { data: created, error } = await supabaseClient.from(table).insert(insertData).select("id").single();
+    if (error) throw error;
+    return created.id;
+  }
+
+  document.getElementById("orgForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const orgBtn = document.getElementById("orgBtn");
+    const orgMsg = document.getElementById("orgMsg");
+    orgBtn.disabled = true;
+    orgBtn.textContent = "Saving...";
+
+    const presbyteryName = document.getElementById("presbyteryName").value.trim();
+    const consistoryName = document.getElementById("consistoryName").value.trim();
+    const churchName = document.getElementById("churchName").value.trim();
+    const congregationName = document.getElementById("congregationName").value.trim();
+
+    try {
+      const presbyteryId = await findOrCreate("presbyteries", { name: presbyteryName }, { name: presbyteryName });
+      const consistoryId = await findOrCreate("consistories",
+        { name: consistoryName, presbytery_id: presbyteryId },
+        { name: consistoryName, presbytery_id: presbyteryId });
+      const churchId = await findOrCreate("churches",
+        { name: churchName, consistory_id: consistoryId },
+        { name: churchName, consistory_id: consistoryId });
+      await findOrCreate("congregations",
+        { name: congregationName, church_id: churchId },
+        { name: congregationName, church_id: churchId });
+
+      setMsg(orgMsg, "Saved. \"" + congregationName + "\" is ready for sections.", false);
+      await refreshCongregations();
+    } catch (err) {
+      setMsg(orgMsg, "Error: " + err.message, true);
+    }
+
+    orgBtn.disabled = false;
+    orgBtn.textContent = "Create / update";
+  });
+
+  async function refreshCongregations() {
+    const { data, error } = await supabaseClient.from("congregations").select("id, name").order("name");
+    congregationsCache = (!error && data) ? data : [];
+    const select = document.getElementById("sectionCongregationSelect");
+    select.innerHTML = congregationsCache.map(c => `<option value="${c.id}">${c.name}</option>`).join("")
+      || `<option value="">No congregations yet — create one above</option>`;
+  }
+
+  document.getElementById("sectionCongregationSelect").addEventListener("change", refreshSectionsTable);
+
+  async function refreshSectionsTable() {
+    const congregationId = document.getElementById("sectionCongregationSelect").value;
+    const tbody = document.getElementById("sectionsTableBody");
+    if (!congregationId) { tbody.innerHTML = ""; return; }
+
+    const { data, error } = await supabaseClient
+      .from("sections").select("id, name")
+      .eq("congregation_id", congregationId).order("name");
+
+    tbody.innerHTML = (!error && data && data.length)
+      ? data.map(s => `<tr><td>${s.name}</td></tr>`).join("")
+      : `<tr><td style="color:var(--ink-soft);">No sections yet.</td></tr>`;
+  }
+
+  document.getElementById("addSectionBtn").addEventListener("click", async () => {
+    const congregationId = document.getElementById("sectionCongregationSelect").value;
+    const nameInput = document.getElementById("newSectionName");
+    const sectionMsg = document.getElementById("sectionMsg");
+    const name = nameInput.value.trim();
+
+    if (!congregationId) { setMsg(sectionMsg, "Create a congregation first.", true); return; }
+    if (!name) { setMsg(sectionMsg, "Enter a section name.", true); return; }
+
+    const { error } = await supabaseClient.from("sections").insert({ congregation_id: congregationId, name });
+    if (error) {
+      setMsg(sectionMsg, "Error: " + error.message, true);
+    } else {
+      setMsg(sectionMsg, `Section "${name}" added.`, false);
+      nameInput.value = "";
+      await refreshSectionsTable();
+      await refreshSections();
+      await refreshMemberSectionPicker();
+    }
+  });
+
+  // ---------------------------------------------------------------
+  // Members
+  // ---------------------------------------------------------------
+
+  async function refreshSections() {
+    const { data, error } = await supabaseClient
+      .from("sections")
+      .select("id, name, congregation_id, congregations(name)")
+      .order("name");
+    sectionsCache = (!error && data)
+      ? data.map(s => ({ id: s.id, name: s.name, congregation_id: s.congregation_id, congregation_name: s.congregations ? s.congregations.name : "" }))
+      : [];
+  }
+
+  async function refreshMemberSectionPicker() {
+    const picker = document.getElementById("memberSectionPicker");
+    const select = document.getElementById("memberSectionSelect");
+
+    if (currentUser.role === "Admin") {
+      picker.style.display = "block";
+      select.disabled = false;
+      select.innerHTML = sectionsCache.length
+        ? sectionsCache.map(s => `<option value="${s.id}">${s.congregation_name} — ${s.name}</option>`).join("")
+        : `<option value="">No sections yet — create one under Organization Setup</option>`;
+    } else {
+      // Elder-in-charge / Elder / Steward: locked to their own section.
+      const mySection = sectionsCache.find(s => s.id === currentUser.section_id);
+      select.innerHTML = mySection
+        ? `<option value="${mySection.id}">${mySection.congregation_name} — ${mySection.name}</option>`
+        : `<option value="">No section assigned to your login yet</option>`;
+      select.disabled = true;
+    }
+    await refreshMembersTable();
+  }
+
+  document.getElementById("memberSectionSelect").addEventListener("change", refreshMembersTable);
+
+  async function refreshMembersTable() {
+    const sectionId = document.getElementById("memberSectionSelect").value;
+    const tbody = document.getElementById("membersTableBody");
+    if (!sectionId) { tbody.innerHTML = `<tr><td colspan="4" style="color:var(--ink-soft);">No section selected.</td></tr>`; return; }
+
+    const { data, error } = await supabaseClient
+      .from("members")
+      .select("surname, first_name, membership_status, date_joined_section")
+      .eq("section_id", sectionId)
+      .order("surname");
+
+    tbody.innerHTML = (!error && data && data.length)
+      ? data.map(m => `<tr><td>${m.surname}</td><td>${m.first_name}</td><td>${m.membership_status || ""}</td><td>${m.date_joined_section || ""}</td></tr>`).join("")
+      : `<tr><td colspan="4" style="color:var(--ink-soft);">No members yet in this section.</td></tr>`;
+  }
+
+  // Toggle the shared baptism/confirmation date label based on membership status.
+  document.getElementById("m_membership_status").addEventListener("change", (e) => {
+    const label = document.getElementById("m_bc_date_label");
+    label.textContent = (e.target.value === "Full Member")
+      ? "Date of confirmation"
+      : "Date of baptism";
+  });
+
+  document.getElementById("memberForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const memberBtn = document.getElementById("memberBtn");
+    const memberMsg = document.getElementById("memberMsg");
+    const sectionId = document.getElementById("memberSectionSelect").value;
+
+    if (!sectionId) { setMsg(memberMsg, "Select a section first.", true); return; }
+
+    const section = sectionsCache.find(s => s.id == sectionId);
+    const membershipStatus = document.getElementById("m_membership_status").value;
+    const bcDate = document.getElementById("m_bc_date").value || null;
+
+    const record = {
+      congregation_id: section ? section.congregation_id : null,
+      section_id: sectionId,
+      surname: document.getElementById("m_surname").value.trim(),
+      first_name: document.getElementById("m_first_name").value.trim(),
+      other_name: document.getElementById("m_other_name").value.trim() || null,
+      gender: document.getElementById("m_gender").value,
+      membership_status: membershipStatus,
+      marital_status: document.getElementById("m_marital_status").value || null,
+      date_of_birth: document.getElementById("m_dob").value || null,
+      place_of_birth: document.getElementById("m_pob").value.trim() || null,
+      nrc_number: document.getElementById("m_nrc").value.trim() || null,
+      date_of_confirmation: membershipStatus === "Full Member" ? bcDate : null,
+      date_of_baptism: membershipStatus !== "Full Member" ? bcDate : null,
+      place_of_baptism_confirmation: document.getElementById("m_bc_place").value.trim() || null,
+      baptizing_confirming_minister: document.getElementById("m_bc_minister").value.trim() || null,
+      date_joined_congregation: document.getElementById("m_date_joined_congregation").value || null,
+      position_in_section: document.getElementById("m_position_in_section").value.trim() || null,
+      date_joined_section: document.getElementById("m_date_joined_section").value || null,
+      favourite_hymn: document.getElementById("m_hymn").value.trim() || null,
+      favourite_scripture: document.getElementById("m_scripture").value.trim() || null,
+      phone_number_1: document.getElementById("m_phone1").value.trim() || null,
+      phone_number_2: document.getElementById("m_phone2").value.trim() || null,
+      email: document.getElementById("m_email").value.trim() || null,
+      whatsapp: document.getElementById("m_whatsapp").value.trim() || null
+    };
+
+    memberBtn.disabled = true;
+    memberBtn.textContent = "Saving...";
+
+    const { error } = await supabaseClient.from("members").insert(record);
+
+    memberBtn.disabled = false;
+    memberBtn.textContent = "Add member";
+
+    if (error) {
+      setMsg(memberMsg, "Error: " + error.message, true);
+    } else {
+      setMsg(memberMsg, "Member added.", false);
+      document.getElementById("memberForm").reset();
+      await refreshMembersTable();
+    }
   });
 
   // If a session already exists (e.g. page refresh), skip straight to the dashboard.
