@@ -329,6 +329,8 @@
     <div class="tabs" id="tabBar">
       <button class="tab-btn active" data-panel="setupPanel" id="tabSetupBtn">Organization Setup</button>
       <button class="tab-btn" data-panel="membersPanel" id="tabMembersBtn">Members</button>
+      <button class="tab-btn" data-panel="peoplePanel" id="tabPeopleBtn">People</button>
+      <button class="tab-btn" data-panel="offeringsPanel" id="tabOfferingsBtn">Offerings</button>
     </div>
 
     <!-- ---------- SETUP PANEL (Admin only) ---------- -->
@@ -384,6 +386,26 @@
       <table class="data-table" id="congregationsTable">
         <thead><tr><th>Name</th><th>Church</th><th>Actions</th></tr></thead>
         <tbody id="congregationsTableBody"></tbody>
+      </table>
+
+      <div class="subhead">Committees</div>
+      <div class="inline-row" style="margin-bottom:10px;">
+        <div>
+          <label for="committeeCongregationSelect">Congregation</label>
+          <select id="committeeCongregationSelect"></select>
+        </div>
+      </div>
+      <div class="inline-row">
+        <div>
+          <label for="newCommitteeName">New committee name</label>
+          <input type="text" id="newCommitteeName" placeholder="e.g. Finance Committee">
+        </div>
+        <button type="button" id="addCommitteeBtn">Add committee</button>
+      </div>
+      <div class="msg" id="committeeMsg"></div>
+      <table class="data-table" id="committeesTable">
+        <thead><tr><th>Committee</th><th>Actions</th></tr></thead>
+        <tbody id="committeesTableBody"></tbody>
       </table>
 
       <div class="subhead">Sections</div>
@@ -524,10 +546,162 @@
         </div>
       </form>
 
+      <div id="memberSubforms" style="display:none;">
+
+        <div class="subhead">Church group memberships</div>
+        <p class="field-note" style="margin-bottom:10px;">Fill in a row and click Save to record that membership; leave a row blank and click Save to clear it.</p>
+        <table class="data-table" id="groupsTable">
+          <thead><tr><th>Group</th><th>Name (if applicable)</th><th>Position</th><th>Date joined</th><th>Date badged</th><th>Place</th><th></th></tr></thead>
+          <tbody id="groupsTableBody"></tbody>
+        </table>
+
+        <div class="subhead">Committees</div>
+        <div class="inline-row">
+          <div>
+            <label for="committeeSelect">Committee</label>
+            <select id="committeeSelect"></select>
+          </div>
+          <div>
+            <label for="committeePosition">Position</label>
+            <input type="text" id="committeePosition" placeholder="e.g. Chairperson">
+          </div>
+          <button type="button" id="addCommitteeAssignBtn">Add</button>
+        </div>
+        <div class="msg" id="committeeAssignMsg"></div>
+        <table class="data-table" id="memberCommitteesTable">
+          <thead><tr><th>Committee</th><th>Position</th><th>Actions</th></tr></thead>
+          <tbody id="memberCommitteesTableBody"></tbody>
+        </table>
+
+      </div>
+
       <div class="subhead">Members in this section</div>
       <table class="data-table" id="membersTable">
         <thead><tr><th>Surname</th><th>First name</th><th>Status</th><th>Joined section</th><th>Actions</th></tr></thead>
         <tbody id="membersTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- ---------- PEOPLE PANEL (Admin only) ---------- -->
+    <div class="panel" id="peoplePanel">
+
+      <div class="subhead">Create a login — step 1</div>
+      <p class="field-note" style="margin-bottom:14px;">
+        Fill this in, then follow the instructions below to create the account in Supabase.
+        This can't be done automatically from here — see the note under "How this works" if you're curious why.
+      </p>
+      <form id="loginPrepForm" class="form-grid">
+        <div>
+          <label for="lp_username">Username</label>
+          <input type="text" id="lp_username" placeholder="e.g. jbanda" required>
+        </div>
+        <div>
+          <label for="lp_role">Role</label>
+          <select id="lp_role" required>
+            <option value="">Select...</option>
+            <option>Minister-in-charge</option>
+            <option>Elder-in-charge</option>
+            <option>Elder</option>
+            <option>Steward</option>
+          </select>
+        </div>
+        <div id="lp_section_wrap">
+          <label for="lp_section">Section</label>
+          <select id="lp_section"></select>
+        </div>
+        <div>
+          <label for="lp_password">Password</label>
+          <div class="inline-row">
+            <div><input type="text" id="lp_password" readonly></div>
+            <button type="button" id="lp_generateBtn">Generate</button>
+          </div>
+        </div>
+        <div class="field-full">
+          <div class="msg" id="loginPrepMsg"></div>
+          <button type="submit" id="loginPrepBtn">Prepare login details</button>
+        </div>
+      </form>
+
+      <div class="empty-state" id="loginInstructions" style="display:none; text-align:left; margin-top:16px;">
+        <strong>Now create the account in Supabase:</strong>
+        <ol style="margin:10px 0 0; padding-left:20px; line-height:1.8;">
+          <li>Go to Supabase → Authentication → Users → Add user.</li>
+          <li>Email: <code id="li_email"></code></li>
+          <li>Password: <code id="li_password"></code></li>
+          <li>Check "Auto confirm user?", then Create user.</li>
+          <li>Copy the new user's UID and paste it below.</li>
+        </ol>
+      </div>
+
+      <div class="subhead">Link the account — step 2</div>
+      <div class="inline-row">
+        <div>
+          <label for="lp_uid">Supabase User UID</label>
+          <input type="text" id="lp_uid" placeholder="paste the UID here">
+        </div>
+        <button type="button" id="lp_linkBtn">Link account</button>
+      </div>
+      <div class="msg" id="linkMsg"></div>
+
+      <div class="subhead">Existing logins</div>
+      <table class="data-table" id="usersTable">
+        <thead><tr><th>Username</th><th>Role</th><th>Section</th><th>Actions</th></tr></thead>
+        <tbody id="usersTableBody"></tbody>
+      </table>
+
+      <div class="subhead">Section elders &amp; stewards</div>
+      <div class="inline-row" style="margin-bottom:10px;">
+        <div>
+          <label for="leadershipSectionSelect">Section</label>
+          <select id="leadershipSectionSelect"></select>
+        </div>
+      </div>
+      <p class="field-note" style="margin-bottom:10px;">Up to 4 elders (one marked as elder-in-charge) and 4 stewards per section.</p>
+      <table class="data-table" id="leadershipTable">
+        <thead><tr><th>Member</th><th>Section role</th></tr></thead>
+        <tbody id="leadershipTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- ---------- OFFERINGS PANEL ---------- -->
+    <div class="panel" id="offeringsPanel">
+
+      <div class="subhead">Enter an offering</div>
+      <form id="offeringForm" class="form-grid">
+        <div>
+          <label for="of_type">Offering type</label>
+          <select id="of_type" required></select>
+        </div>
+        <div id="of_section_wrap">
+          <label for="of_section">Section</label>
+          <select id="of_section"></select>
+        </div>
+        <div>
+          <label for="of_year">Year</label>
+          <input type="number" id="of_year" min="2000" max="2100" required>
+        </div>
+        <div>
+          <label for="of_period">Period</label>
+          <select id="of_period" required></select>
+        </div>
+        <div id="of_member_wrap" style="display:none;">
+          <label for="of_member">Member</label>
+          <select id="of_member"></select>
+        </div>
+        <div>
+          <label for="of_amount">Amount</label>
+          <input type="number" id="of_amount" step="0.01" min="0" required>
+        </div>
+        <div class="field-full">
+          <div class="msg" id="offeringMsg"></div>
+          <button type="submit" id="offeringBtn">Save offering</button>
+        </div>
+      </form>
+
+      <div class="subhead">Entries for this selection</div>
+      <table class="data-table" id="offeringsTable">
+        <thead><tr><th>Period</th><th id="of_table_member_header" style="display:none;">Member</th><th>Amount</th><th>Actions</th></tr></thead>
+        <tbody id="offeringsTableBody"></tbody>
       </table>
     </div>
 
@@ -562,6 +736,7 @@
   let congregationsCache = [];  // [{id, name}]
   let sectionsCache = [];       // [{id, name, congregation_id, congregation_name}]
   let editingMemberId = null;   // set while the member form is editing an existing row instead of creating one
+  let committeesCache = [];     // [{id, name, congregation_id}] — used by the Members committee-assignment UI
 
   function showError(text) {
     loginMsg.textContent = text;
@@ -603,10 +778,16 @@
     dashCard.classList.add("show");
 
     const canSetup = (data.role === "Admin");
+    const canManageMembers = (data.role === "Admin" || data.role === "Elder-in-charge");
+    const canManagePeople = (data.role === "Admin");
+
     document.getElementById("tabSetupBtn").style.display = canSetup ? "inline-block" : "none";
-    if (!canSetup) {
-      switchPanel("membersPanel");
-    }
+    document.getElementById("tabMembersBtn").style.display = canManageMembers ? "inline-block" : "none";
+    document.getElementById("tabPeopleBtn").style.display = canManagePeople ? "inline-block" : "none";
+
+    if (canSetup) switchPanel("setupPanel");
+    else if (canManageMembers) switchPanel("membersPanel");
+    else switchPanel("offeringsPanel");
 
     await refreshAllStructure();
   }
@@ -707,6 +888,14 @@
     await refreshSectionsTable();     // sections list for the currently selected congregation
     await refreshSections();          // cache used by the Members tab
     await refreshMemberSectionPicker();
+    await refreshCommitteeCongregationSelect();
+    await refreshCommitteesTable();
+    await refreshCommitteesCache();
+    populateLpSection();
+    await refreshUsersTable();
+    populateLeadershipSection();
+    await refreshLeadershipTable();
+    if (currentUser) await initOfferingsPanel();
   }
 
   async function refreshPresbyteriesTable() {
@@ -858,8 +1047,64 @@
   });
 
   // ---------------------------------------------------------------
+  // Committees
+  // ---------------------------------------------------------------
+
+  async function refreshCommitteeCongregationSelect() {
+    const select = document.getElementById("committeeCongregationSelect");
+    const prior = select.value;
+    select.innerHTML = congregationsCache.map(c => `<option value="${c.id}">${c.name}</option>`).join("")
+      || `<option value="">No congregations yet</option>`;
+    if (prior) select.value = prior;
+  }
+
+  document.getElementById("committeeCongregationSelect").addEventListener("change", refreshCommitteesTable);
+
+  async function refreshCommitteesTable() {
+    const congregationId = document.getElementById("committeeCongregationSelect").value;
+    const tbody = document.getElementById("committeesTableBody");
+    if (!congregationId) { tbody.innerHTML = ""; return; }
+
+    const { data, error } = await supabaseClient
+      .from("committees").select("id, name")
+      .eq("congregation_id", congregationId).order("name");
+
+    tbody.innerHTML = (!error && data && data.length)
+      ? data.map(c => structureRowHtml("committees", c.id, [c.name], c.name)).join("")
+      : emptyRow(2, "No committees yet.");
+  }
+
+  document.getElementById("addCommitteeBtn").addEventListener("click", async () => {
+    const congregationId = document.getElementById("committeeCongregationSelect").value;
+    const nameInput = document.getElementById("newCommitteeName");
+    const committeeMsg = document.getElementById("committeeMsg");
+    const name = nameInput.value.trim();
+
+    if (!congregationId) { setMsg(committeeMsg, "Create a congregation first.", true); return; }
+    if (!name) { setMsg(committeeMsg, "Enter a committee name.", true); return; }
+
+    const { error } = await supabaseClient.from("committees").insert({ congregation_id: congregationId, name });
+    if (error) {
+      setMsg(committeeMsg, "Error: " + error.message, true);
+    } else {
+      setMsg(committeeMsg, `Committee "${name}" added.`, false);
+      nameInput.value = "";
+      await refreshCommitteesTable();
+      await refreshCommitteesCache();
+    }
+  });
+
+  async function refreshCommitteesCache() {
+    const { data, error } = await supabaseClient.from("committees").select("id, name, congregation_id");
+    committeesCache = (!error && data) ? data : [];
+  }
+  DEPENDENT_LABEL.committees = "member assignments";
+
+  // ---------------------------------------------------------------
   // Members
   // ---------------------------------------------------------------
+
+
 
   async function refreshSections() {
     const { data, error } = await supabaseClient
@@ -975,6 +1220,12 @@
     document.getElementById("m_email").value = member.email || "";
     document.getElementById("m_whatsapp").value = member.whatsapp || "";
 
+    document.getElementById("memberSubforms").style.display = "block";
+    renderGroupsTable();
+    loadGroupMemberships(id);
+    populateCommitteeSelect(member.congregation_id);
+    loadMemberCommittees(id);
+
     document.getElementById("memberForm").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -984,9 +1235,151 @@
     document.getElementById("memberFormHeading").textContent = "Add a member";
     document.getElementById("memberBtn").textContent = "Add member";
     document.getElementById("cancelEditBtn").style.display = "none";
+    document.getElementById("memberSubforms").style.display = "none";
   }
 
   document.getElementById("cancelEditBtn").addEventListener("click", exitEditMode);
+
+  // ---------------------------------------------------------------
+  // Church group memberships (MCF, WCF, Praise Team, etc.)
+  // ---------------------------------------------------------------
+
+  const GROUP_TYPES = [
+    { type: "MCF", hasName: false, hasBadge: true },
+    { type: "WCF", hasName: false, hasBadge: true },
+    { type: "Praise Team", hasName: true, hasBadge: false },
+    { type: "Church Choir", hasName: true, hasBadge: false },
+    { type: "Boys Brigade", hasName: false, hasBadge: false },
+    { type: "Girls Brigade", hasName: false, hasBadge: false },
+    { type: "Sunday School", hasName: false, hasBadge: false }
+  ];
+
+  function renderGroupsTable() {
+    document.getElementById("groupsTableBody").innerHTML = GROUP_TYPES.map(g => `
+      <tr data-group-type="${g.type}">
+        <td>${g.type}</td>
+        <td>${g.hasName ? `<input type="text" class="g_name">` : "—"}</td>
+        <td><input type="text" class="g_position"></td>
+        <td><input type="date" class="g_date_joined"></td>
+        <td>${g.hasBadge ? `<input type="date" class="g_date_badged">` : "—"}</td>
+        <td><input type="text" class="g_place"></td>
+        <td><button type="button" class="logout-btn save-group-btn" style="padding:6px 10px;font-size:12px;">Save</button></td>
+      </tr>`).join("");
+  }
+
+  async function loadGroupMemberships(memberId) {
+    const { data, error } = await supabaseClient.from("member_groups").select("*").eq("member_id", memberId);
+    if (error || !data) return;
+
+    data.forEach(g => {
+      const row = document.querySelector(`#groupsTableBody tr[data-group-type="${g.group_type}"]`);
+      if (!row) return;
+      const nameInput = row.querySelector(".g_name");
+      if (nameInput) nameInput.value = g.group_name || "";
+      row.querySelector(".g_position").value = g.position || "";
+      row.querySelector(".g_date_joined").value = g.date_joined || "";
+      const badgeInput = row.querySelector(".g_date_badged");
+      if (badgeInput) badgeInput.value = g.date_badged || "";
+      row.querySelector(".g_place").value = g.place_badged || "";
+    });
+  }
+
+  document.getElementById("groupsTable").addEventListener("click", async (e) => {
+    const btn = e.target.closest(".save-group-btn");
+    if (!btn || !editingMemberId) return;
+
+    const row = btn.closest("tr");
+    const groupType = row.dataset.groupType;
+    const nameInput = row.querySelector(".g_name");
+    const badgeInput = row.querySelector(".g_date_badged");
+
+    const record = {
+      member_id: editingMemberId,
+      group_type: groupType,
+      group_name: nameInput ? (nameInput.value.trim() || null) : null,
+      position: row.querySelector(".g_position").value.trim() || null,
+      date_joined: row.querySelector(".g_date_joined").value || null,
+      date_badged: badgeInput ? (badgeInput.value || null) : null,
+      place_badged: row.querySelector(".g_place").value.trim() || null
+    };
+
+    const allBlank = !record.group_name && !record.position && !record.date_joined && !record.date_badged && !record.place_badged;
+
+    btn.disabled = true;
+    btn.textContent = "...";
+
+    if (allBlank) {
+      await supabaseClient.from("member_groups").delete().eq("member_id", editingMemberId).eq("group_type", groupType);
+    } else {
+      const { error } = await supabaseClient.from("member_groups").insert(record);
+      if (error && error.code === "23505") {
+        await supabaseClient.from("member_groups").update(record).eq("member_id", editingMemberId).eq("group_type", groupType);
+      } else if (error) {
+        alert("Error saving " + groupType + ": " + error.message);
+      }
+    }
+
+    btn.disabled = false;
+    btn.textContent = "Save";
+  });
+
+  // ---------------------------------------------------------------
+  // Committee assignments (per member, up to 6)
+  // ---------------------------------------------------------------
+
+  function populateCommitteeSelect(congregationId) {
+    const select = document.getElementById("committeeSelect");
+    const options = committeesCache.filter(c => c.congregation_id === congregationId);
+    select.innerHTML = options.length
+      ? options.map(c => `<option value="${c.id}">${c.name}</option>`).join("")
+      : `<option value="">No committees set up for this congregation</option>`;
+  }
+
+  async function loadMemberCommittees(memberId) {
+    const { data, error } = await supabaseClient
+      .from("member_committees")
+      .select("id, position, committees(name)")
+      .eq("member_id", memberId);
+
+    const tbody = document.getElementById("memberCommitteesTableBody");
+    tbody.innerHTML = (!error && data && data.length)
+      ? data.map(mc => `<tr>
+          <td>${mc.committees ? mc.committees.name : ""}</td>
+          <td>${mc.position || ""}</td>
+          <td><button type="button" class="logout-btn delete-committee-assign-btn" data-id="${mc.id}" style="padding:6px 12px;font-size:12px;color:var(--error);border-color:#F0D4CC;">Remove</button></td>
+        </tr>`).join("")
+      : emptyRow(3, "No committees assigned.");
+
+    tbody.querySelectorAll(".delete-committee-assign-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        await supabaseClient.from("member_committees").delete().eq("id", btn.dataset.id);
+        await loadMemberCommittees(memberId);
+      });
+    });
+  }
+
+  document.getElementById("addCommitteeAssignBtn").addEventListener("click", async () => {
+    const assignMsg = document.getElementById("committeeAssignMsg");
+    if (!editingMemberId) { setMsg(assignMsg, "Select a member to edit first.", true); return; }
+
+    const committeeId = document.getElementById("committeeSelect").value;
+    if (!committeeId) { setMsg(assignMsg, "Choose a committee.", true); return; }
+
+    const { count } = await supabaseClient
+      .from("member_committees").select("id", { count: "exact", head: true }).eq("member_id", editingMemberId);
+    if (count >= 6) { setMsg(assignMsg, "This member is already on 6 committees — the maximum allowed.", true); return; }
+
+    const position = document.getElementById("committeePosition").value.trim() || null;
+    const { error } = await supabaseClient.from("member_committees").insert({ member_id: editingMemberId, committee_id: committeeId, position });
+
+    if (error) {
+      setMsg(assignMsg, error.code === "23505" ? "Already assigned to that committee." : "Error: " + error.message, true);
+    } else {
+      setMsg(assignMsg, "Added.", false);
+      document.getElementById("committeePosition").value = "";
+      await loadMemberCommittees(editingMemberId);
+    }
+  });
 
   // Toggle the shared baptism/confirmation date label based on membership status.
   document.getElementById("m_membership_status").addEventListener("change", (e) => {
@@ -1054,6 +1447,384 @@
       await refreshMembersTable();
     }
   });
+
+  // ---------------------------------------------------------------
+  // People: create/link logins, list existing logins, section leadership
+  // ---------------------------------------------------------------
+
+  function randomPassword() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
+    let out = "";
+    for (let i = 0; i < 12; i++) out += chars[Math.floor(Math.random() * chars.length)];
+    return out;
+  }
+
+  document.getElementById("lp_generateBtn").addEventListener("click", () => {
+    document.getElementById("lp_password").value = randomPassword();
+  });
+
+  document.getElementById("lp_role").addEventListener("change", (e) => {
+    document.getElementById("lp_section_wrap").style.display = (e.target.value === "Minister-in-charge") ? "none" : "block";
+  });
+
+  function populateLpSection() {
+    const select = document.getElementById("lp_section");
+    select.innerHTML = sectionsCache.length
+      ? sectionsCache.map(s => `<option value="${s.id}">${s.congregation_name} — ${s.name}</option>`).join("")
+      : `<option value="">No sections yet</option>`;
+  }
+
+  document.getElementById("loginPrepForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById("loginPrepMsg");
+    const username = document.getElementById("lp_username").value.trim().toLowerCase();
+    const role = document.getElementById("lp_role").value;
+    const password = document.getElementById("lp_password").value;
+
+    if (!username || !role) { setMsg(msg, "Fill in a username and role.", true); return; }
+    if (!password) { setMsg(msg, "Click Generate to create a password first.", true); return; }
+
+    const { data: existing } = await supabaseClient.from("users").select("id").eq("username", username).maybeSingle();
+    if (existing) { setMsg(msg, `Username "${username}" is already in use.`, true); return; }
+
+    const email = username + "@" + AUTH_EMAIL_DOMAIN;
+    document.getElementById("li_email").textContent = email;
+    document.getElementById("li_password").textContent = password;
+    document.getElementById("loginInstructions").style.display = "block";
+    setMsg(msg, "Details ready — follow the steps below, then link the account.", false);
+  });
+
+  document.getElementById("lp_linkBtn").addEventListener("click", async () => {
+    const msg = document.getElementById("linkMsg");
+    const username = document.getElementById("lp_username").value.trim().toLowerCase();
+    const role = document.getElementById("lp_role").value;
+    const sectionId = document.getElementById("lp_section").value;
+    const uid = document.getElementById("lp_uid").value.trim();
+
+    if (!username || !role) { setMsg(msg, "Fill in step 1 first.", true); return; }
+    if (!uid) { setMsg(msg, "Paste the UID from Supabase.", true); return; }
+
+    const section = sectionsCache.find(s => s.id == sectionId);
+    const record = {
+      auth_id: uid,
+      username: username,
+      role: role,
+      section_id: role === "Minister-in-charge" ? null : (sectionId || null),
+      congregation_id: role === "Minister-in-charge" ? null : (section ? section.congregation_id : null)
+    };
+
+    const { error } = await supabaseClient.from("users").insert(record);
+    if (error) {
+      setMsg(msg, "Error: " + error.message, true);
+    } else {
+      setMsg(msg, `"${username}" linked successfully.`, false);
+      document.getElementById("loginPrepForm").reset();
+      document.getElementById("lp_uid").value = "";
+      document.getElementById("loginInstructions").style.display = "none";
+      await refreshUsersTable();
+    }
+  });
+
+  async function refreshUsersTable() {
+    const { data, error } = await supabaseClient
+      .from("users").select("id, username, role, sections(name)").order("username");
+    const tbody = document.getElementById("usersTableBody");
+    tbody.innerHTML = (!error && data && data.length)
+      ? data.map(u => `<tr>
+          <td>${u.username}</td>
+          <td>${u.role}</td>
+          <td>${u.sections ? u.sections.name : ""}</td>
+          <td><button type="button" class="logout-btn unlink-user-btn" data-id="${u.id}" data-name="${u.username}" style="padding:6px 12px;font-size:12px;color:var(--error);border-color:#F0D4CC;">Unlink</button></td>
+        </tr>`).join("")
+      : emptyRow(4, "No logins linked yet.");
+
+    tbody.querySelectorAll(".unlink-user-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if (!confirm(`Unlink "${btn.dataset.name}"? This removes their access in this app, but their Supabase login must be deleted separately in the Supabase dashboard if you want to remove it entirely.`)) return;
+        await supabaseClient.from("users").delete().eq("id", btn.dataset.id);
+        await refreshUsersTable();
+      });
+    });
+  }
+
+  // ---- Section elders & stewards ----
+
+  function populateLeadershipSection() {
+    const select = document.getElementById("leadershipSectionSelect");
+    const prior = select.value;
+    select.innerHTML = sectionsCache.length
+      ? sectionsCache.map(s => `<option value="${s.id}">${s.congregation_name} — ${s.name}</option>`).join("")
+      : `<option value="">No sections yet</option>`;
+    if (prior) select.value = prior;
+  }
+
+  document.getElementById("leadershipSectionSelect").addEventListener("change", refreshLeadershipTable);
+
+  async function refreshLeadershipTable() {
+    const sectionId = document.getElementById("leadershipSectionSelect").value;
+    const tbody = document.getElementById("leadershipTableBody");
+    if (!sectionId) { tbody.innerHTML = ""; return; }
+
+    const [{ data: members }, { data: elders }, { data: stewards }] = await Promise.all([
+      supabaseClient.from("members").select("id, surname, first_name").eq("section_id", sectionId).order("surname"),
+      supabaseClient.from("section_elders").select("member_id, is_elder_in_charge").eq("section_id", sectionId),
+      supabaseClient.from("section_stewards").select("member_id").eq("section_id", sectionId)
+    ]);
+
+    if (!members || !members.length) { tbody.innerHTML = emptyRow(2, "No members in this section yet."); return; }
+
+    tbody.innerHTML = members.map(m => {
+      const elderRow = (elders || []).find(e => e.member_id === m.id);
+      const isSteward = (stewards || []).some(s => s.member_id === m.id);
+      let current = "None";
+      if (elderRow && elderRow.is_elder_in_charge) current = "Elder-in-charge";
+      else if (elderRow) current = "Elder";
+      else if (isSteward) current = "Steward";
+
+      return `<tr data-member-id="${m.id}">
+        <td>${m.surname}, ${m.first_name}</td>
+        <td>
+          <select class="leadership-role-select" data-member-id="${m.id}">
+            <option ${current === "None" ? "selected" : ""}>None</option>
+            <option ${current === "Elder" ? "selected" : ""}>Elder</option>
+            <option ${current === "Elder-in-charge" ? "selected" : ""}>Elder-in-charge</option>
+            <option ${current === "Steward" ? "selected" : ""}>Steward</option>
+          </select>
+        </td>
+      </tr>`;
+    }).join("");
+
+    tbody.querySelectorAll(".leadership-role-select").forEach(sel => {
+      sel.addEventListener("change", () => setLeadershipRole(sectionId, sel.dataset.memberId, sel.value));
+    });
+  }
+
+  async function setLeadershipRole(sectionId, memberId, newRole) {
+    // Clear any existing assignment for this member in this section first.
+    await supabaseClient.from("section_elders").delete().eq("section_id", sectionId).eq("member_id", memberId);
+    await supabaseClient.from("section_stewards").delete().eq("section_id", sectionId).eq("member_id", memberId);
+
+    if (newRole === "Elder" || newRole === "Elder-in-charge") {
+      const { count } = await supabaseClient.from("section_elders").select("member_id", { count: "exact", head: true }).eq("section_id", sectionId);
+      if (count >= 4) {
+        alert("This section already has 4 elders. Remove one first.");
+        await refreshLeadershipTable();
+        return;
+      }
+      if (newRole === "Elder-in-charge") {
+        // Only one elder-in-charge per section — demote any existing one to plain Elder.
+        await supabaseClient.from("section_elders").update({ is_elder_in_charge: false }).eq("section_id", sectionId).eq("is_elder_in_charge", true);
+      }
+      await supabaseClient.from("section_elders").insert({ section_id: sectionId, member_id: memberId, is_elder_in_charge: newRole === "Elder-in-charge" });
+    } else if (newRole === "Steward") {
+      const { count } = await supabaseClient.from("section_stewards").select("member_id", { count: "exact", head: true }).eq("section_id", sectionId);
+      if (count >= 4) {
+        alert("This section already has 4 stewards. Remove one first.");
+        await refreshLeadershipTable();
+        return;
+      }
+      await supabaseClient.from("section_stewards").insert({ section_id: sectionId, member_id: memberId });
+    }
+
+    await refreshLeadershipTable();
+  }
+
+  // ---------------------------------------------------------------
+  // Offerings
+  // ---------------------------------------------------------------
+
+  let offeringTypesCache = [];
+
+  function buildPeriodOptions(periodsPerYear) {
+    if (periodsPerYear === 12) {
+      const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      return months.map((m, i) => ({ value: i + 1, label: m }));
+    }
+    if (periodsPerYear === 52) {
+      return Array.from({ length: 52 }, (_, i) => ({ value: i + 1, label: "Week " + (i + 1) }));
+    }
+    if (periodsPerYear === 6) {
+      return Array.from({ length: 6 }, (_, i) => ({ value: i + 1, label: "Instalment " + (i + 1) }));
+    }
+    return [{ value: 1, label: "Full amount" }];
+  }
+
+  async function initOfferingsPanel() {
+    if (!offeringTypesCache.length) {
+      const { data } = await supabaseClient.from("offering_types").select("*").order("name");
+      offeringTypesCache = data || [];
+    }
+
+    // A user with role "Elder-in-charge" enters the same offering types as "Elder".
+    const roleForFilter = (currentUser.role === "Elder-in-charge") ? "Elder" : currentUser.role;
+    const visibleTypes = (currentUser.role === "Admin")
+      ? offeringTypesCache
+      : offeringTypesCache.filter(t => t.entered_by_role === roleForFilter);
+
+    const typeSelect = document.getElementById("of_type");
+    typeSelect.innerHTML = visibleTypes.length
+      ? visibleTypes.map(t => `<option value="${t.id}">${t.name}</option>`).join("")
+      : `<option value="">No offering types available for your role</option>`;
+
+    const sectionWrap = document.getElementById("of_section_wrap");
+    const sectionSelect = document.getElementById("of_section");
+    if (currentUser.role === "Admin") {
+      sectionSelect.disabled = false;
+      sectionSelect.innerHTML = sectionsCache.map(s => `<option value="${s.id}">${s.congregation_name} — ${s.name}</option>`).join("")
+        || `<option value="">No sections yet</option>`;
+    } else {
+      const mySection = sectionsCache.find(s => s.id === currentUser.section_id);
+      sectionSelect.innerHTML = mySection ? `<option value="${mySection.id}">${mySection.congregation_name} — ${mySection.name}</option>` : `<option value="">No section assigned</option>`;
+      sectionSelect.disabled = true;
+    }
+
+    if (!document.getElementById("of_year").value) {
+      document.getElementById("of_year").value = new Date().getFullYear();
+    }
+
+    onOfferingTypeChange();
+  }
+
+  document.getElementById("of_type").addEventListener("change", onOfferingTypeChange);
+  document.getElementById("of_section").addEventListener("change", () => { populateOfferingMemberSelect(); refreshOfferingsTable(); });
+  document.getElementById("of_year").addEventListener("change", refreshOfferingsTable);
+  document.getElementById("of_period").addEventListener("change", refreshOfferingsTable);
+
+  function currentOfferingType() {
+    const id = document.getElementById("of_type").value;
+    return offeringTypesCache.find(t => t.id == id);
+  }
+
+  function onOfferingTypeChange() {
+    const type = currentOfferingType();
+    const periodSelect = document.getElementById("of_period");
+    const memberWrap = document.getElementById("of_member_wrap");
+    const memberHeader = document.getElementById("of_table_member_header");
+
+    if (!type) { periodSelect.innerHTML = ""; return; }
+
+    periodSelect.innerHTML = buildPeriodOptions(type.periods_per_year)
+      .map(p => `<option value="${p.value}">${p.label}</option>`).join("");
+
+    const isMemberLevel = (type.tracking_level === "member");
+    memberWrap.style.display = isMemberLevel ? "block" : "none";
+    memberHeader.style.display = isMemberLevel ? "table-cell" : "none";
+    document.getElementById("of_member").required = isMemberLevel;
+
+    if (isMemberLevel) populateOfferingMemberSelect();
+    refreshOfferingsTable();
+  }
+
+  async function populateOfferingMemberSelect() {
+    const type = currentOfferingType();
+    if (!type || type.tracking_level !== "member") return;
+
+    const sectionId = document.getElementById("of_section").value;
+    const select = document.getElementById("of_member");
+    if (!sectionId) { select.innerHTML = `<option value="">Select a section first</option>`; return; }
+
+    const { data } = await supabaseClient.from("members").select("id, surname, first_name").eq("section_id", sectionId).order("surname");
+    select.innerHTML = (data && data.length)
+      ? data.map(m => `<option value="${m.id}">${m.surname}, ${m.first_name}</option>`).join("")
+      : `<option value="">No members in this section</option>`;
+  }
+
+  document.getElementById("offeringForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById("offeringBtn");
+    const msg = document.getElementById("offeringMsg");
+    const type = currentOfferingType();
+
+    if (!type) { setMsg(msg, "Choose an offering type.", true); return; }
+
+    const record = {
+      offering_type_id: type.id,
+      year: parseInt(document.getElementById("of_year").value, 10),
+      period_number: parseInt(document.getElementById("of_period").value, 10),
+      section_id: type.tracking_level === "section" ? document.getElementById("of_section").value : null,
+      member_id: type.tracking_level === "member" ? (document.getElementById("of_member").value || null) : null,
+      amount: parseFloat(document.getElementById("of_amount").value),
+      entered_by_user_id: currentUser.id
+    };
+
+    if (type.tracking_level === "member" && !record.member_id) { setMsg(msg, "Choose a member.", true); return; }
+
+    btn.disabled = true;
+    btn.textContent = "Saving...";
+
+    const matchCols = { offering_type_id: record.offering_type_id, year: record.year, period_number: record.period_number };
+    if (record.section_id) matchCols.section_id = record.section_id; else matchCols.member_id = record.member_id;
+
+    const { error: insertError } = await supabaseClient.from("offerings").insert(record);
+    let error = insertError;
+    if (insertError && insertError.code === "23505") {
+      const { error: updateError } = await supabaseClient.from("offerings").update({ amount: record.amount, entered_by_user_id: record.entered_by_user_id }).match(matchCols);
+      error = updateError;
+    }
+
+    btn.disabled = false;
+    btn.textContent = "Save offering";
+
+    if (error) {
+      setMsg(msg, "Error: " + error.message, true);
+    } else {
+      setMsg(msg, "Saved.", false);
+      document.getElementById("of_amount").value = "";
+      await refreshOfferingsTable();
+    }
+  });
+
+  async function refreshOfferingsTable() {
+    const type = currentOfferingType();
+    const tbody = document.getElementById("offeringsTableBody");
+    if (!type) { tbody.innerHTML = ""; return; }
+
+    const year = parseInt(document.getElementById("of_year").value, 10);
+    const periods = buildPeriodOptions(type.periods_per_year);
+    const periodLabel = (n) => { const p = periods.find(x => x.value === n); return p ? p.label : n; };
+
+    if (type.tracking_level === "section") {
+      const sectionId = document.getElementById("of_section").value;
+      if (!sectionId) { tbody.innerHTML = ""; return; }
+
+      const { data } = await supabaseClient.from("offerings").select("id, period_number, amount")
+        .eq("offering_type_id", type.id).eq("year", year).eq("section_id", sectionId).order("period_number");
+
+      tbody.innerHTML = (data && data.length)
+        ? data.map(o => `<tr>
+            <td>${periodLabel(o.period_number)}</td><td></td><td>${o.amount}</td>
+            <td><button type="button" class="logout-btn delete-offering-btn" data-id="${o.id}" style="padding:6px 12px;font-size:12px;color:var(--error);border-color:#F0D4CC;">Delete</button></td>
+          </tr>`).join("")
+        : emptyRow(4, "No entries yet for this section/year.");
+    } else {
+      const sectionId = document.getElementById("of_section").value;
+      if (!sectionId) { tbody.innerHTML = ""; return; }
+      const { data: members } = await supabaseClient.from("members").select("id, surname, first_name").eq("section_id", sectionId);
+      const memberMap = {};
+      (members || []).forEach(m => { memberMap[m.id] = m.surname + ", " + m.first_name; });
+      const memberIds = (members || []).map(m => m.id);
+
+      if (!memberIds.length) { tbody.innerHTML = emptyRow(4, "No members in this section."); return; }
+
+      const { data } = await supabaseClient.from("offerings").select("id, period_number, amount, member_id")
+        .eq("offering_type_id", type.id).eq("year", year).in("member_id", memberIds).order("period_number");
+
+      tbody.innerHTML = (data && data.length)
+        ? data.map(o => `<tr>
+            <td>${periodLabel(o.period_number)}</td><td>${memberMap[o.member_id] || ""}</td><td>${o.amount}</td>
+            <td><button type="button" class="logout-btn delete-offering-btn" data-id="${o.id}" style="padding:6px 12px;font-size:12px;color:var(--error);border-color:#F0D4CC;">Delete</button></td>
+          </tr>`).join("")
+        : emptyRow(4, "No entries yet for this section/year.");
+    }
+
+    tbody.querySelectorAll(".delete-offering-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("Delete this entry?")) return;
+        await supabaseClient.from("offerings").delete().eq("id", btn.dataset.id);
+        await refreshOfferingsTable();
+      });
+    });
+  }
 
   // If a session already exists (e.g. page refresh), skip straight to the dashboard.
   (async () => {
