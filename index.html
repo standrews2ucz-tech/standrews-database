@@ -319,7 +319,7 @@
     loginBtn.textContent = "Sign in";
 
     if (error) {
-      showError("Incorrect username or password.");
+      showError("Login failed: " + error.message + " (status: " + (error.status || "n/a") + ")");
       return;
     }
 
