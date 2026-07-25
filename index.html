@@ -362,6 +362,30 @@
         </div>
       </form>
 
+      <div class="subhead">Presbyteries</div>
+      <table class="data-table" id="presbyteriesTable">
+        <thead><tr><th>Name</th><th>Actions</th></tr></thead>
+        <tbody id="presbyteriesTableBody"></tbody>
+      </table>
+
+      <div class="subhead">Consistories</div>
+      <table class="data-table" id="consistoriesTable">
+        <thead><tr><th>Name</th><th>Presbytery</th><th>Actions</th></tr></thead>
+        <tbody id="consistoriesTableBody"></tbody>
+      </table>
+
+      <div class="subhead">Churches</div>
+      <table class="data-table" id="churchesTable">
+        <thead><tr><th>Name</th><th>Consistory</th><th>Actions</th></tr></thead>
+        <tbody id="churchesTableBody"></tbody>
+      </table>
+
+      <div class="subhead">Congregations</div>
+      <table class="data-table" id="congregationsTable">
+        <thead><tr><th>Name</th><th>Church</th><th>Actions</th></tr></thead>
+        <tbody id="congregationsTableBody"></tbody>
+      </table>
+
       <div class="subhead">Sections</div>
       <div class="inline-row" style="margin-bottom:10px;">
         <div>
@@ -378,7 +402,7 @@
       </div>
       <div class="msg" id="sectionMsg"></div>
       <table class="data-table" id="sectionsTable">
-        <thead><tr><th>Section</th></tr></thead>
+        <thead><tr><th>Section</th><th>Actions</th></tr></thead>
         <tbody id="sectionsTableBody"></tbody>
       </table>
     </div>
@@ -584,9 +608,7 @@
       switchPanel("membersPanel");
     }
 
-    await refreshCongregations();
-    await refreshSections();
-    await refreshMemberSectionPicker();
+    await refreshAllStructure();
   }
 
   loginForm.addEventListener("submit", async (e) => {
@@ -652,6 +674,112 @@
     return created.id;
   }
 
+  // ---------------------------------------------------------------
+  // Generic rename/delete for the organization hierarchy
+  // (Presbyteries, Consistories, Churches, Congregations, Sections)
+  // ---------------------------------------------------------------
+
+  const DEPENDENT_LABEL = {
+    presbyteries: "consistories",
+    consistories: "churches",
+    churches: "congregations",
+    congregations: "sections",
+    sections: "members"
+  };
+
+  function structureRowHtml(table, id, displayCols, label) {
+    return `<tr>${displayCols.map(c => `<td>${c}</td>`).join("")}<td>
+      <button type="button" class="logout-btn rename-btn" data-table="${table}" data-id="${id}" data-label="${label.replace(/"/g, '&quot;')}" style="padding:6px 12px;font-size:12px;">Rename</button>
+      <button type="button" class="logout-btn delete-btn" data-table="${table}" data-id="${id}" data-label="${label.replace(/"/g, '&quot;')}" style="padding:6px 12px;font-size:12px;color:var(--error);border-color:#F0D4CC;margin-left:6px;">Delete</button>
+    </td></tr>`;
+  }
+
+  function emptyRow(colspan, text) {
+    return `<tr><td colspan="${colspan}" style="color:var(--ink-soft);">${text}</td></tr>`;
+  }
+
+  async function refreshAllStructure() {
+    await refreshPresbyteriesTable();
+    await refreshConsistoriesTable();
+    await refreshChurchesTable();
+    await refreshCongregationsTable();
+    await refreshCongregations();     // repopulates the section-adding dropdown
+    await refreshSectionsTable();     // sections list for the currently selected congregation
+    await refreshSections();          // cache used by the Members tab
+    await refreshMemberSectionPicker();
+  }
+
+  async function refreshPresbyteriesTable() {
+    const { data, error } = await supabaseClient.from("presbyteries").select("id, name").order("name");
+    document.getElementById("presbyteriesTableBody").innerHTML = (!error && data && data.length)
+      ? data.map(p => structureRowHtml("presbyteries", p.id, [p.name], p.name)).join("")
+      : emptyRow(2, "None yet — add one above under Quick setup.");
+  }
+
+  async function refreshConsistoriesTable() {
+    const { data, error } = await supabaseClient.from("consistories").select("id, name, presbyteries(name)").order("name");
+    document.getElementById("consistoriesTableBody").innerHTML = (!error && data && data.length)
+      ? data.map(c => structureRowHtml("consistories", c.id, [c.name, c.presbyteries ? c.presbyteries.name : ""], c.name)).join("")
+      : emptyRow(3, "None yet — add one above under Quick setup.");
+  }
+
+  async function refreshChurchesTable() {
+    const { data, error } = await supabaseClient.from("churches").select("id, name, consistories(name)").order("name");
+    document.getElementById("churchesTableBody").innerHTML = (!error && data && data.length)
+      ? data.map(c => structureRowHtml("churches", c.id, [c.name, c.consistories ? c.consistories.name : ""], c.name)).join("")
+      : emptyRow(3, "None yet — add one above under Quick setup.");
+  }
+
+  async function refreshCongregationsTable() {
+    const { data, error } = await supabaseClient.from("congregations").select("id, name, churches(name)").order("name");
+    document.getElementById("congregationsTableBody").innerHTML = (!error && data && data.length)
+      ? data.map(c => structureRowHtml("congregations", c.id, [c.name, c.churches ? c.churches.name : ""], c.name)).join("")
+      : emptyRow(3, "None yet — add one above under Quick setup.");
+  }
+
+  async function renameEntity(table, id, currentLabel) {
+    const newName = prompt("Rename", currentLabel);
+    if (newName === null) return;               // cancelled
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === currentLabel) return;
+
+    const { error } = await supabaseClient.from(table).update({ name: trimmed }).eq("id", id);
+    if (error) {
+      alert("Error renaming: " + error.message);
+      return;
+    }
+    await refreshAllStructure();
+  }
+
+  async function deleteEntity(table, id, label) {
+    if (!confirm('Delete "' + label + '"? This cannot be undone.')) return;
+
+    const { error } = await supabaseClient.from(table).delete().eq("id", id);
+    if (error) {
+      if (error.code === "23503") {
+        alert('Can\'t delete "' + label + '" — it still has ' + DEPENDENT_LABEL[table] + ' under it. Remove those first.');
+      } else {
+        alert("Error: " + error.message);
+      }
+      return;
+    }
+    await refreshAllStructure();
+  }
+
+  // Event delegation: catches Rename/Delete clicks from any structure table
+  // (presbyteries, consistories, churches, congregations, sections).
+  document.getElementById("setupPanel").addEventListener("click", (e) => {
+    const renameBtn = e.target.closest(".rename-btn");
+    if (renameBtn) {
+      renameEntity(renameBtn.dataset.table, renameBtn.dataset.id, renameBtn.dataset.label);
+      return;
+    }
+    const deleteBtn = e.target.closest(".delete-btn");
+    if (deleteBtn) {
+      deleteEntity(deleteBtn.dataset.table, deleteBtn.dataset.id, deleteBtn.dataset.label);
+    }
+  });
+
   document.getElementById("orgForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const orgBtn = document.getElementById("orgBtn");
@@ -677,7 +805,7 @@
         { name: congregationName, church_id: churchId });
 
       setMsg(orgMsg, "Saved. \"" + congregationName + "\" is ready for sections.", false);
-      await refreshCongregations();
+      await refreshAllStructure();
     } catch (err) {
       setMsg(orgMsg, "Error: " + err.message, true);
     }
@@ -706,8 +834,8 @@
       .eq("congregation_id", congregationId).order("name");
 
     tbody.innerHTML = (!error && data && data.length)
-      ? data.map(s => `<tr><td>${s.name}</td></tr>`).join("")
-      : `<tr><td style="color:var(--ink-soft);">No sections yet.</td></tr>`;
+      ? data.map(s => structureRowHtml("sections", s.id, [s.name], s.name)).join("")
+      : emptyRow(2, "No sections yet.");
   }
 
   document.getElementById("addSectionBtn").addEventListener("click", async () => {
@@ -725,9 +853,7 @@
     } else {
       setMsg(sectionMsg, `Section "${name}" added.`, false);
       nameInput.value = "";
-      await refreshSectionsTable();
-      await refreshSections();
-      await refreshMemberSectionPicker();
+      await refreshAllStructure();
     }
   });
 
