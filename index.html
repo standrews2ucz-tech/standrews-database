@@ -224,6 +224,10 @@
       <div>
         <label for="password">Password</label>
         <input type="password" id="password" autocomplete="current-password" required>
+        <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-weight:400;font-size:13px;color:var(--ink-soft);">
+          <input type="checkbox" id="showPassword" style="width:auto;">
+          Show password
+        </label>
       </div>
       <div class="msg error" id="loginMsg"></div>
       <button type="submit" id="loginBtn">Sign in</button>
@@ -305,7 +309,7 @@
     loginBtn.disabled = true;
     loginBtn.textContent = "Signing in...";
 
-    const username = document.getElementById("username").value.trim();
+    const username = document.getElementById("username").value.trim().toLowerCase();
     const password = document.getElementById("password").value;
     const email = username + "@" + AUTH_EMAIL_DOMAIN;
 
@@ -320,6 +324,10 @@
     }
 
     await showDashboard(data.user);
+  });
+
+  document.getElementById("showPassword").addEventListener("change", (e) => {
+    document.getElementById("password").type = e.target.checked ? "text" : "password";
   });
 
   logoutBtn.addEventListener("click", async () => {
