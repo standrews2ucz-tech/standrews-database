@@ -297,23 +297,19 @@
       <div class="mark-text">Congregation Database</div>
     </div>
     <h1>Sign in</h1>
-    <p class="sub">Enter the username and password given to you by your administrator.</p>
+    <p class="sub">Enter the email and password given to you by your administrator.</p>
 
     <form id="loginForm">
       <div>
-        <label for="username">Username</label>
-        <input type="text" id="username" autocomplete="username" required autocapitalize="off" spellcheck="false">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" autocomplete="email" required>
       </div>
-      <div>
-        <label for="password">Password</label>
-        <input type="password" id="password" autocomplete="current-password" required>
-        <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-weight:400;font-size:13px;color:var(--ink-soft);">
-          <input type="checkbox" id="showPassword" style="width:auto;">
-          Show password
-        </label>
+      <div style="margin-top:14px;">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" autocomplete="current-password" required>
       </div>
-      <div class="msg error" id="loginMsg"></div>
-      <button type="submit" id="loginBtn">Sign in</button>
+      <div class="msg error" id="loginMsg" style="margin-top:14px;"></div>
+      <button type="submit" id="loginBtn" style="margin-top:14px;">Sign in</button>
     </form>
   </div>
 
@@ -568,32 +564,38 @@
       </form>
 
       <div id="memberSubforms" style="display:none;">
+        <div class="subhead" id="subformsHeading" style="margin-top:0;"></div>
 
-        <div class="subhead">Church group memberships</div>
-        <p class="field-note" style="margin-bottom:10px;">Fill in a row and click Save to record that membership; leave a row blank and click Save to clear it.</p>
-        <table class="data-table" id="groupsTable">
-          <thead><tr><th>Group</th><th>Name (if applicable)</th><th>Position</th><th>Date joined</th><th>Date badged</th><th>Place</th><th></th></tr></thead>
-          <tbody id="groupsTableBody"></tbody>
-        </table>
-
-        <div class="subhead">Committees</div>
-        <div class="inline-row">
-          <div>
-            <label for="committeeSelect">Committee</label>
-            <select id="committeeSelect"></select>
-          </div>
-          <div>
-            <label for="committeePosition">Position</label>
-            <input type="text" id="committeePosition" placeholder="e.g. Chairperson">
-          </div>
-          <button type="button" id="addCommitteeAssignBtn">Add</button>
+        <div id="groupsBlock">
+          <div class="subhead">Church group memberships</div>
+          <p class="field-note" style="margin-bottom:10px;">Fill in a row and click Save to record that membership; leave a row blank and click Save to clear it.</p>
+          <table class="data-table" id="groupsTable">
+            <thead><tr><th>Group</th><th>Name (if applicable)</th><th>Position</th><th>Date joined</th><th>Date badged</th><th>Place</th><th></th></tr></thead>
+            <tbody id="groupsTableBody"></tbody>
+          </table>
         </div>
-        <div class="msg" id="committeeAssignMsg"></div>
-        <table class="data-table" id="memberCommitteesTable">
-          <thead><tr><th>Committee</th><th>Position</th><th>Actions</th></tr></thead>
-          <tbody id="memberCommitteesTableBody"></tbody>
-        </table>
 
+        <div id="committeesBlock">
+          <div class="subhead">Committees</div>
+          <div class="inline-row">
+            <div>
+              <label for="committeeSelect">Committee</label>
+              <select id="committeeSelect"></select>
+            </div>
+            <div>
+              <label for="committeePosition">Position</label>
+              <input type="text" id="committeePosition" placeholder="e.g. Chairperson">
+            </div>
+            <button type="button" id="addCommitteeAssignBtn">Add</button>
+          </div>
+          <div class="msg" id="committeeAssignMsg"></div>
+          <table class="data-table" id="memberCommitteesTable">
+            <thead><tr><th>Committee</th><th>Position</th><th>Actions</th></tr></thead>
+            <tbody id="memberCommitteesTableBody"></tbody>
+          </table>
+        </div>
+
+        <button type="button" id="closeSubformsBtn" class="logout-btn" style="margin-top:14px;">Close</button>
       </div>
 
       <div class="subhead">Members in this section</div>
@@ -608,13 +610,17 @@
 
       <div class="subhead">Create a login — step 1</div>
       <p class="field-note" style="margin-bottom:14px;">
-        Fill this in, then follow the instructions below to create the account in Supabase.
+        Fill this in, generate a password, then follow the instructions below to create the account in Supabase.
         This can't be done automatically from here — see the note under "How this works" if you're curious why.
       </p>
       <form id="loginPrepForm" class="form-grid">
         <div>
-          <label for="lp_username">Username</label>
-          <input type="text" id="lp_username" placeholder="e.g. jbanda" required>
+          <label for="lp_displayname">Display name</label>
+          <input type="text" id="lp_displayname" placeholder="e.g. Joseph Banda" required>
+        </div>
+        <div>
+          <label for="lp_email">Email address</label>
+          <input type="email" id="lp_email" placeholder="e.g. jbanda@example.com" required>
         </div>
         <div>
           <label for="lp_role">Role</label>
@@ -624,11 +630,16 @@
             <option>Elder-in-charge</option>
             <option>Elder</option>
             <option>Steward</option>
+            <option>Member</option>
           </select>
         </div>
         <div id="lp_section_wrap">
           <label for="lp_section">Section</label>
           <select id="lp_section"></select>
+        </div>
+        <div id="lp_member_wrap" style="display:none;">
+          <label for="lp_member">Which member record is this?</label>
+          <select id="lp_member"></select>
         </div>
         <div>
           <label for="lp_password">Password</label>
@@ -651,6 +662,7 @@
           <li>Password: <code id="li_password"></code></li>
           <li>Check "Auto confirm user?", then Create user.</li>
           <li>Copy the new user's UID and paste it below.</li>
+          <li>Give this person their email and password directly — they'll use both to sign in.</li>
         </ol>
       </div>
 
@@ -666,7 +678,7 @@
 
       <div class="subhead">Existing logins</div>
       <table class="data-table" id="usersTable">
-        <thead><tr><th>Username</th><th>Role</th><th>Section</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Section</th><th>Actions</th></tr></thead>
         <tbody id="usersTableBody"></tbody>
       </table>
 
@@ -734,22 +746,54 @@
         <div class="field-full">
           <label for="rep_type">Report</label>
           <select id="rep_type">
-            <optgroup label="Members">
-              <option value="member_info">Member personal information</option>
+            <optgroup label="Personal Data">
+              <option value="personal_individual">Personal data — individual</option>
+              <option value="personal_section">Personal data — section</option>
+              <option value="personal_congregation">Personal data — whole congregation</option>
             </optgroup>
-            <optgroup label="Offerings">
-              <option value="sunday_congregation">Sunday Offering — whole congregation</option>
-              <option value="sunday_section">Sunday Offering — per section</option>
-              <option value="offerings_per_member">Summary of offerings per member</option>
-              <option value="section_offerings">Summary of section offerings</option>
-              <option value="hc_congregation">Holy Communion — whole congregation</option>
-              <option value="hc_section">Holy Communion — per section</option>
+            <optgroup label="Sunday Offerings">
+              <option value="sunday_section">Sunday offerings — section</option>
+              <option value="sunday_congregation">Sunday offerings — whole congregation</option>
+            </optgroup>
+            <optgroup label="Fundraising">
+              <option value="fundraising_member">Fundraising — individual</option>
+              <option value="fundraising_section">Fundraising — section</option>
               <option value="fundraising_congregation">Fundraising — whole congregation</option>
-              <option value="fundraising_section">Fundraising — per section</option>
-              <option value="fundraising_member">Fundraising — per member</option>
+            </optgroup>
+            <optgroup label="Holy Communion">
+              <option value="hcday_member">Holy Communion (choose day) — individual</option>
+              <option value="hcday_section">Holy Communion (choose day) — section</option>
+              <option value="hcday_congregation">Holy Communion (choose day) — whole congregation</option>
+            </optgroup>
+            <optgroup label="Harvest">
+              <option value="harvest_member">Harvest — individual</option>
+              <option value="harvest_section">Harvest — section</option>
               <option value="harvest_congregation">Harvest — whole congregation</option>
-              <option value="harvest_section">Harvest — per section</option>
-              <option value="harvest_member">Harvest — per member</option>
+            </optgroup>
+            <optgroup label="Christmas Offering">
+              <option value="christmas_section">Christmas offering — section</option>
+              <option value="christmas_congregation">Christmas offering — whole congregation</option>
+            </optgroup>
+            <optgroup label="New Year Offering">
+              <option value="newyear_section">New Year offering — section</option>
+              <option value="newyear_congregation">New Year offering — whole congregation</option>
+            </optgroup>
+            <optgroup label="Maundy Thursday Offering">
+              <option value="maundy_section">Maundy Thursday offering — section</option>
+              <option value="maundy_congregation">Maundy Thursday offering — whole congregation</option>
+            </optgroup>
+            <optgroup label="Good Friday Offering">
+              <option value="goodfriday_section">Good Friday offering — section</option>
+              <option value="goodfriday_congregation">Good Friday offering — whole congregation</option>
+            </optgroup>
+            <optgroup label="Groups &amp; Committees">
+              <option value="group_members">Group members — of each group</option>
+              <option value="committee_members">Group members — for each committee</option>
+            </optgroup>
+            <optgroup label="Rosters">
+              <option value="section_roster">Members of each section</option>
+              <option value="all_elders">Members who are elders</option>
+              <option value="all_stewards">Members who are stewards</option>
             </optgroup>
           </select>
         </div>
@@ -764,6 +808,26 @@
         <div id="rep_member_wrap" style="display:none;">
           <label for="rep_member">Member</label>
           <select id="rep_member"></select>
+        </div>
+        <div id="rep_hcday_wrap" style="display:none;">
+          <label for="rep_hcday">Which Holy Communion day</label>
+          <select id="rep_hcday"></select>
+        </div>
+        <div id="rep_group_wrap" style="display:none;">
+          <label for="rep_group">Group</label>
+          <select id="rep_group">
+            <option>MCF</option>
+            <option>WCF</option>
+            <option>Praise Team</option>
+            <option>Church Choir</option>
+            <option>Boys Brigade</option>
+            <option>Girls Brigade</option>
+            <option>Sunday School</option>
+          </select>
+        </div>
+        <div id="rep_committee_wrap" style="display:none;">
+          <label for="rep_committee">Committee</label>
+          <select id="rep_committee"></select>
         </div>
         <div id="rep_year_wrap">
           <label for="rep_year">Year</label>
@@ -787,6 +851,26 @@
       </div>
     </div>
 
+    <!-- ---------- MY DETAILS PANEL (Member role only) ---------- -->
+    <div class="panel" id="myDataPanel">
+      <div class="subhead" style="margin-top:0;">My personal details</div>
+      <table class="data-table" id="myDetailsTable"></table>
+
+      <div class="subhead">My offerings</div>
+      <div class="inline-row" style="margin-bottom:10px;">
+        <div>
+          <label for="my_year">Year</label>
+          <input type="number" id="my_year" min="2000" max="2100">
+        </div>
+        <button type="button" id="my_loadOfferingsBtn" style="width:auto;">Show</button>
+      </div>
+      <div class="inline-row" style="margin-bottom:10px;">
+        <button type="button" id="my_downloadPdfBtn" style="width:auto;">Download PDF</button>
+        <button type="button" id="my_downloadExcelBtn" style="width:auto;">Download Excel</button>
+      </div>
+      <table class="data-table" id="myOfferingsTable"></table>
+    </div>
+
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -800,10 +884,6 @@
   // ---------------------------------------------------------------
   const SUPABASE_URL = "https://lvvpfohejrleryyhvfqx.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_Ciz6GA_ydowryOM5B4Br9Q_hBiiI8dF";
-
-  // Must exactly match the fake domain used when creating logins in
-  // Supabase Authentication -> Users (see DEPLOYMENT.md).
-  const AUTH_EMAIL_DOMAIN = "andrews.local";
   // ---------------------------------------------------------------
 
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -846,7 +926,7 @@
   async function showDashboard(authUser) {
     const { data, error } = await supabaseClient
       .from("users")
-      .select("id, username, role, congregation_id, section_id")
+      .select("id, username, role, congregation_id, section_id, member_id")
       .eq("auth_id", authUser.id)
       .single();
 
@@ -862,9 +942,19 @@
     loginCard.style.display = "none";
     dashCard.classList.add("show");
 
+    // Members of the congregation get a stripped-down, read-only view of
+    // just their own details and offerings -- no tabs, no other data.
+    if (data.role === "Member") {
+      document.getElementById("tabBar").style.display = "none";
+      switchPanel("myDataPanel");
+      await initMyDataPanel();
+      return;
+    }
+    document.getElementById("tabBar").style.display = "flex";
+
     const canSetup = (data.role === "Admin");
     const canManageMembers = (data.role === "Elder" || data.role === "Elder-in-charge");
-    const canViewMembers = (data.role === "Admin" || canManageMembers);
+    const canViewMembers = (data.role === "Admin" || data.role === "Minister-in-charge" || canManageMembers);
     const canManagePeople = (data.role === "Admin");
 
     document.getElementById("tabSetupBtn").style.display = canSetup ? "inline-block" : "none";
@@ -890,25 +980,19 @@
     loginBtn.disabled = true;
     loginBtn.textContent = "Signing in...";
 
-    const username = document.getElementById("username").value.trim().toLowerCase();
-    const password = document.getElementById("password").value;
-    const email = username + "@" + AUTH_EMAIL_DOMAIN;
-
+    const email = document.getElementById("loginEmail").value.trim().toLowerCase();
+    const password = document.getElementById("loginPassword").value;
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
     loginBtn.disabled = false;
     loginBtn.textContent = "Sign in";
 
     if (error) {
-      showError("Login failed: " + error.message + " (status: " + (error.status || "n/a") + ")");
+      showError("Incorrect email or password.");
       return;
     }
 
     await showDashboard(data.user);
-  });
-
-  document.getElementById("showPassword").addEventListener("change", (e) => {
-    document.getElementById("password").type = e.target.checked ? "text" : "password";
   });
 
   logoutBtn.addEventListener("click", async () => {
@@ -927,7 +1011,8 @@
     document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
     document.getElementById(panelId).classList.add("active");
-    document.querySelector('.tab-btn[data-panel="' + panelId + '"]').classList.add("active");
+    const tabBtn = document.querySelector('.tab-btn[data-panel="' + panelId + '"]');
+    if (tabBtn) tabBtn.classList.add("active");
   }
 
   document.querySelectorAll(".tab-btn").forEach(btn => {
@@ -1255,7 +1340,7 @@
           <td>${window.canManageMembers ? `
             <button type="button" class="logout-btn edit-member-btn" data-id="${m.id}" style="padding:6px 12px;font-size:12px;">Edit</button>
             <button type="button" class="logout-btn delete-member-btn" data-id="${m.id}" data-name="${m.surname}, ${m.first_name}" style="padding:6px 12px;font-size:12px;color:var(--error);border-color:#F0D4CC;margin-left:6px;">Delete</button>
-          ` : `<span style="color:var(--ink-soft);font-size:12px;">View only</span>`}</td>
+          ` : `<button type="button" class="logout-btn committees-only-btn" data-id="${m.id}" style="padding:6px 12px;font-size:12px;">Committees</button>`}</td>
         </tr>`).join("")
       : `<tr><td colspan="5" style="color:var(--ink-soft);">No members yet in this section.</td></tr>`;
 
@@ -1266,6 +1351,10 @@
 
       tbody.querySelectorAll(".delete-member-btn").forEach(btn => {
         btn.addEventListener("click", () => deleteMember(btn.dataset.id, btn.dataset.name));
+      });
+    } else {
+      tbody.querySelectorAll(".committees-only-btn").forEach(btn => {
+        btn.addEventListener("click", () => openCommitteesOnlyFor(btn.dataset.id, data.find(m => m.id == btn.dataset.id)));
       });
     }
   }
@@ -1321,6 +1410,9 @@
     document.getElementById("m_nok_address").value = member.next_of_kin_address || "";
 
     document.getElementById("memberSubforms").style.display = "block";
+    document.getElementById("groupsBlock").style.display = "block";
+    document.getElementById("committeesBlock").style.display = "block";
+    document.getElementById("subformsHeading").textContent = "";
     renderGroupsTable();
     loadGroupMemberships(id);
     populateCommitteeSelect(member.congregation_id);
@@ -1328,6 +1420,27 @@
 
     document.getElementById("memberForm").scrollIntoView({ behavior: "smooth", block: "start" });
   }
+
+  // Admin-only path: manage just this member's committee assignments,
+  // without full personal-data edit access (which Admin no longer has).
+  function openCommitteesOnlyFor(id, member) {
+    editingMemberId = id;
+    document.getElementById("memberSubforms").style.display = "block";
+    document.getElementById("groupsBlock").style.display = "none";
+    document.getElementById("committeesBlock").style.display = "block";
+    document.getElementById("subformsHeading").textContent = "Committees for " + member.surname + ", " + member.first_name;
+    populateCommitteeSelect(member.congregation_id);
+    loadMemberCommittees(id);
+    document.getElementById("memberSubforms").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  document.getElementById("closeSubformsBtn").addEventListener("click", () => {
+    if (window.canManageMembers) exitEditMode();
+    else {
+      editingMemberId = null;
+      document.getElementById("memberSubforms").style.display = "none";
+    }
+  });
 
   function exitEditMode() {
     editingMemberId = null;
@@ -1569,7 +1682,10 @@
   });
 
   document.getElementById("lp_role").addEventListener("change", (e) => {
-    document.getElementById("lp_section_wrap").style.display = (e.target.value === "Minister-in-charge") ? "none" : "block";
+    const role = e.target.value;
+    document.getElementById("lp_section_wrap").style.display = (role === "Minister-in-charge" || role === "Member") ? "none" : "block";
+    document.getElementById("lp_member_wrap").style.display = (role === "Member") ? "block" : "none";
+    if (role === "Member") populateLpMember();
   });
 
   function populateLpSection() {
@@ -1579,20 +1695,27 @@
       : `<option value="">No sections yet</option>`;
   }
 
+  async function populateLpMember() {
+    const select = document.getElementById("lp_member");
+    const { data } = await supabaseClient.from("members").select("id, surname, first_name, sections(name)").order("surname");
+    select.innerHTML = (data && data.length)
+      ? data.map(m => `<option value="${m.id}">${m.surname}, ${m.first_name} (${m.sections ? m.sections.name : "no section"})</option>`).join("")
+      : `<option value="">No members yet</option>`;
+  }
+
   document.getElementById("loginPrepForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const msg = document.getElementById("loginPrepMsg");
-    const username = document.getElementById("lp_username").value.trim().toLowerCase();
+    const email = document.getElementById("lp_email").value.trim().toLowerCase();
     const role = document.getElementById("lp_role").value;
     const password = document.getElementById("lp_password").value;
 
-    if (!username || !role) { setMsg(msg, "Fill in a username and role.", true); return; }
+    if (!email || !role) { setMsg(msg, "Fill in an email and role.", true); return; }
     if (!password) { setMsg(msg, "Click Generate to create a password first.", true); return; }
 
-    const { data: existing } = await supabaseClient.from("users").select("id").eq("username", username).maybeSingle();
-    if (existing) { setMsg(msg, `Username "${username}" is already in use.`, true); return; }
+    const { data: existing } = await supabaseClient.from("users").select("id").eq("email", email).maybeSingle();
+    if (existing) { setMsg(msg, `"${email}" is already linked to a login.`, true); return; }
 
-    const email = username + "@" + AUTH_EMAIL_DOMAIN;
     document.getElementById("li_email").textContent = email;
     document.getElementById("li_password").textContent = password;
     document.getElementById("loginInstructions").style.display = "block";
@@ -1601,28 +1724,35 @@
 
   document.getElementById("lp_linkBtn").addEventListener("click", async () => {
     const msg = document.getElementById("linkMsg");
-    const username = document.getElementById("lp_username").value.trim().toLowerCase();
+    const displayName = document.getElementById("lp_displayname").value.trim();
+    const email = document.getElementById("lp_email").value.trim().toLowerCase();
     const role = document.getElementById("lp_role").value;
     const sectionId = document.getElementById("lp_section").value;
+    const memberId = document.getElementById("lp_member").value;
     const uid = document.getElementById("lp_uid").value.trim();
 
-    if (!username || !role) { setMsg(msg, "Fill in step 1 first.", true); return; }
+    if (!displayName || !email || !role) { setMsg(msg, "Fill in step 1 first.", true); return; }
     if (!uid) { setMsg(msg, "Paste the UID from Supabase.", true); return; }
+    if (role === "Member" && !memberId) { setMsg(msg, "Choose which member record this login belongs to.", true); return; }
 
     const section = sectionsCache.find(s => s.id == sectionId);
+    const isSectionRole = !(role === "Minister-in-charge" || role === "Member");
+
     const record = {
       auth_id: uid,
-      username: username,
+      username: displayName,
+      email: email,
       role: role,
-      section_id: role === "Minister-in-charge" ? null : (sectionId || null),
-      congregation_id: role === "Minister-in-charge" ? null : (section ? section.congregation_id : null)
+      member_id: role === "Member" ? memberId : null,
+      section_id: isSectionRole ? (sectionId || null) : null,
+      congregation_id: isSectionRole ? (section ? section.congregation_id : null) : null
     };
 
     const { error } = await supabaseClient.from("users").insert(record);
     if (error) {
       setMsg(msg, "Error: " + error.message, true);
     } else {
-      setMsg(msg, `"${username}" linked successfully.`, false);
+      setMsg(msg, `"${displayName}" linked successfully.`, false);
       document.getElementById("loginPrepForm").reset();
       document.getElementById("lp_uid").value = "";
       document.getElementById("loginInstructions").style.display = "none";
@@ -1630,18 +1760,42 @@
     }
   });
 
+  async function resetUserPassword(targetAuthId, name) {
+    const newPassword = prompt(`Set a new password for "${name}" (at least 6 characters):`);
+    if (!newPassword) return;
+    if (newPassword.length < 6) { alert("Password must be at least 6 characters."); return; }
+
+    const { data, error } = await supabaseClient.functions.invoke("admin-reset-password", {
+      body: { target_auth_id: targetAuthId, new_password: newPassword }
+    });
+
+    if (error || (data && data.error)) {
+      alert("Error resetting password: " + (data && data.error ? data.error : error.message));
+    } else {
+      alert(`Password for "${name}" has been changed. Share it with them directly -- they'll use it with their email on the login screen.`);
+    }
+  }
+
   async function refreshUsersTable() {
     const { data, error } = await supabaseClient
-      .from("users").select("id, username, role, sections(name)").order("username");
+      .from("users").select("id, auth_id, username, email, role, sections(name)").order("username");
     const tbody = document.getElementById("usersTableBody");
     tbody.innerHTML = (!error && data && data.length)
       ? data.map(u => `<tr>
           <td>${u.username}</td>
+          <td>${u.email || ""}</td>
           <td>${u.role}</td>
           <td>${u.sections ? u.sections.name : ""}</td>
-          <td><button type="button" class="logout-btn unlink-user-btn" data-id="${u.id}" data-name="${u.username}" style="padding:6px 12px;font-size:12px;color:var(--error);border-color:#F0D4CC;">Unlink</button></td>
+          <td>
+            <button type="button" class="logout-btn reset-password-btn" data-authid="${u.auth_id}" data-name="${u.username}" style="padding:6px 12px;font-size:12px;">Reset password</button>
+            <button type="button" class="logout-btn unlink-user-btn" data-id="${u.id}" data-name="${u.username}" style="padding:6px 12px;font-size:12px;color:var(--error);border-color:#F0D4CC;margin-left:6px;">Unlink</button>
+          </td>
         </tr>`).join("")
-      : emptyRow(4, "No logins linked yet.");
+      : emptyRow(5, "No logins linked yet.");
+
+    tbody.querySelectorAll(".reset-password-btn").forEach(btn => {
+      btn.addEventListener("click", () => resetUserPassword(btn.dataset.authid, btn.dataset.name));
+    });
 
     tbody.querySelectorAll(".unlink-user-btn").forEach(btn => {
       btn.addEventListener("click", async () => {
@@ -1936,19 +2090,40 @@
   // ---------------------------------------------------------------
 
   const REPORT_CONFIG = {
-    member_info:              { needs: ["section", "member"], year: false },
-    sunday_congregation:       { needs: ["congregation"], year: true },
-    sunday_section:             { needs: ["congregation"], year: true },
-    offerings_per_member:     { needs: ["section"], year: true },
-    section_offerings:        { needs: ["congregation"], year: true },
-    hc_congregation:          { needs: ["congregation"], year: true },
-    hc_section:                { needs: ["congregation"], year: true },
-    fundraising_congregation: { needs: ["congregation"], year: true },
-    fundraising_section:      { needs: ["congregation"], year: true },
+    personal_individual:   { needs: ["section", "member"], year: false },
+    personal_section:      { needs: ["section"], year: false },
+    personal_congregation: { needs: ["congregation"], year: false },
+
+    sunday_section:        { needs: ["congregation"], year: true },
+    sunday_congregation:   { needs: ["congregation"], year: true },
+
     fundraising_member:       { needs: ["section"], year: true },
-    harvest_congregation:     { needs: ["congregation"], year: true },
-    harvest_section:           { needs: ["congregation"], year: true },
-    harvest_member:            { needs: ["section"], year: true }
+    fundraising_section:      { needs: ["congregation"], year: true },
+    fundraising_congregation: { needs: ["congregation"], year: true },
+
+    hcday_member:       { needs: ["section", "hcday"], year: true },
+    hcday_section:      { needs: ["congregation", "hcday"], year: true },
+    hcday_congregation: { needs: ["congregation", "hcday"], year: true },
+
+    harvest_member:       { needs: ["section"], year: true },
+    harvest_section:      { needs: ["congregation"], year: true },
+    harvest_congregation: { needs: ["congregation"], year: true },
+
+    christmas_section:      { needs: ["congregation"], year: true },
+    christmas_congregation: { needs: ["congregation"], year: true },
+    newyear_section:        { needs: ["congregation"], year: true },
+    newyear_congregation:   { needs: ["congregation"], year: true },
+    maundy_section:         { needs: ["congregation"], year: true },
+    maundy_congregation:    { needs: ["congregation"], year: true },
+    goodfriday_section:     { needs: ["congregation"], year: true },
+    goodfriday_congregation:{ needs: ["congregation"], year: true },
+
+    group_members:     { needs: ["congregation", "group"], year: false },
+    committee_members: { needs: ["congregation", "committee"], year: false },
+
+    section_roster: { needs: ["section"], year: false },
+    all_elders:     { needs: ["congregation"], year: false },
+    all_stewards:   { needs: ["congregation"], year: false }
   };
 
   async function initReportsPanel() {
@@ -1969,16 +2144,21 @@
     document.getElementById("rep_congregation_wrap").style.display = cfg.needs.includes("congregation") ? "block" : "none";
     document.getElementById("rep_section_wrap").style.display = cfg.needs.includes("section") ? "block" : "none";
     document.getElementById("rep_member_wrap").style.display = cfg.needs.includes("member") ? "block" : "none";
+    document.getElementById("rep_hcday_wrap").style.display = cfg.needs.includes("hcday") ? "block" : "none";
+    document.getElementById("rep_group_wrap").style.display = cfg.needs.includes("group") ? "block" : "none";
+    document.getElementById("rep_committee_wrap").style.display = cfg.needs.includes("committee") ? "block" : "none";
     document.getElementById("rep_year_wrap").style.display = cfg.year ? "block" : "none";
 
     if (cfg.needs.includes("congregation")) populateReportCongregationSelect();
     if (cfg.needs.includes("section")) populateReportSectionSelect();
+    if (cfg.needs.includes("hcday")) populateReportHCDaySelect();
+    if (cfg.needs.includes("committee")) populateReportCommitteeSelect();
     document.getElementById("reportResult").style.display = "none";
   }
 
   function populateReportCongregationSelect() {
     const select = document.getElementById("rep_congregation");
-    if (currentUser.role === "Admin") {
+    if (currentUser.role === "Admin" || currentUser.role === "Minister-in-charge") {
       select.disabled = false;
       select.innerHTML = congregationsCache.map(c => `<option value="${c.id}">${c.name}</option>`).join("") || `<option value="">No congregations yet</option>`;
     } else {
@@ -1986,11 +2166,16 @@
       select.innerHTML = myCong ? `<option value="${myCong.id}">${myCong.name}</option>` : `<option value="">No congregation assigned</option>`;
       select.disabled = true;
     }
+    if (document.getElementById("rep_committee_wrap").style.display !== "none") populateReportCommitteeSelect();
   }
+
+  document.getElementById("rep_congregation").addEventListener("change", () => {
+    if (document.getElementById("rep_committee_wrap").style.display !== "none") populateReportCommitteeSelect();
+  });
 
   function populateReportSectionSelect() {
     const select = document.getElementById("rep_section");
-    if (currentUser.role === "Admin") {
+    if (currentUser.role === "Admin" || currentUser.role === "Minister-in-charge") {
       select.disabled = false;
       select.innerHTML = sectionsCache.map(s => `<option value="${s.id}">${s.congregation_name} — ${s.name}</option>`).join("") || `<option value="">No sections yet</option>`;
     } else {
@@ -2006,11 +2191,27 @@
   async function populateReportMemberSelect() {
     const select = document.getElementById("rep_member");
     const sectionId = document.getElementById("rep_section").value;
-    if (!sectionId) { select.innerHTML = `<option value="">All members</option>`; return; }
+    if (!sectionId) { select.innerHTML = `<option value="">Select a section first</option>`; return; }
 
     const { data } = await supabaseClient.from("members").select("id, surname, first_name").eq("section_id", sectionId).order("surname");
-    select.innerHTML = `<option value="">All members in this section</option>` +
-      (data || []).map(m => `<option value="${m.id}">${m.surname}, ${m.first_name}</option>`).join("");
+    select.innerHTML = (data && data.length)
+      ? data.map(m => `<option value="${m.id}">${m.surname}, ${m.first_name}</option>`).join("")
+      : `<option value="">No members in this section</option>`;
+  }
+
+  function populateReportHCDaySelect() {
+    const select = document.getElementById("rep_hcday");
+    const hcTypes = getHCTypes();
+    select.innerHTML = hcTypes.map(t => `<option value="${t.code}">${t.name}</option>`).join("");
+  }
+
+  function populateReportCommitteeSelect() {
+    const select = document.getElementById("rep_committee");
+    const congregationId = document.getElementById("rep_congregation").value;
+    const options = committeesCache.filter(c => c.congregation_id == congregationId);
+    select.innerHTML = options.length
+      ? options.map(c => `<option value="${c.id}">${c.name}</option>`).join("")
+      : `<option value="">No committees for this congregation</option>`;
   }
 
   function getMemberTrackedTypes() { return offeringTypesCache.filter(t => t.tracking_level === "member"); }
@@ -2025,104 +2226,60 @@
     return data || [];
   }
 
-  // ---- Report builders ----
+  // ---- Personal Data ----
 
-  async function buildMemberInfoReport() {
-    const sectionId = document.getElementById("rep_section").value;
-    const memberId = document.getElementById("rep_member").value;
-    const query = memberId
-      ? supabaseClient.from("members").select("*").eq("id", memberId)
-      : supabaseClient.from("members").select("*").eq("section_id", sectionId).order("surname");
-    const { data } = await query;
-
-    const columns = ["Full Name", "Gender", "Membership Status", "Marital Status", "Date of Birth", "Place of Birth",
+  function personalDataColumns() {
+    return ["Full Name", "Gender", "Membership Status", "Marital Status", "Date of Birth", "Place of Birth",
       "NRC Number", "Baptism/Confirmation Date", "Place", "Minister", "Date Joined Congregation", "Section",
       "Date Joined Section", "Favourite Hymn", "Favourite Scripture", "Occupation", "Place of Work",
       "Next of Kin", "Next of Kin Phone", "Next of Kin Address"];
-    const sectionName = (sectionsCache.find(s => s.id == sectionId) || {}).name || "";
+  }
 
-    const rows = (data || []).map(m => [
+  function personalDataRow(m, sectionName) {
+    return [
       [m.surname, m.first_name, m.other_name].filter(Boolean).join(" "),
       m.gender || "", m.membership_status || "", m.marital_status || "",
       m.date_of_birth || "", m.place_of_birth || "", m.nrc_number || "",
       (m.membership_status === "Full Member" ? m.date_of_confirmation : m.date_of_baptism) || "",
       m.place_of_baptism_confirmation || "", m.baptizing_confirming_minister || "",
-      m.date_joined_congregation || "", sectionName, m.date_joined_section || "",
+      m.date_joined_congregation || "", sectionName || "", m.date_joined_section || "",
       m.favourite_hymn || "", m.favourite_scripture || "",
       m.occupation || "", m.place_of_work || "",
       m.next_of_kin_name || "", m.next_of_kin_phone || "", m.next_of_kin_address || ""
-    ]);
-    return { title: "Member Personal Information", columns, rows };
+    ];
   }
 
-  async function buildOfferingsPerMemberReport() {
+  async function buildPersonalDataIndividual() {
     const sectionId = document.getElementById("rep_section").value;
-    const year = parseInt(document.getElementById("rep_year").value, 10);
-    const memberTypes = getMemberTrackedTypes();
+    const memberId = document.getElementById("rep_member").value;
+    if (!memberId) return { title: "Personal Data — Individual", columns: personalDataColumns(), rows: [] };
 
-    const { data: members } = await supabaseClient.from("members").select("id, surname, first_name").eq("section_id", sectionId).order("surname");
-    const memberIds = (members || []).map(m => m.id);
-    const offerings = await fetchOfferings(memberTypes.map(t => t.id), year, "member_id", memberIds);
-
-    const columns = ["Member", ...memberTypes.map(t => t.name), "Total"];
-    const rows = (members || []).map(m => {
-      const amounts = memberTypes.map(t =>
-        offerings.filter(o => o.member_id === m.id && o.offering_type_id === t.id).reduce((a, o) => a + parseFloat(o.amount), 0).toFixed(2));
-      const total = amounts.reduce((a, v) => a + parseFloat(v), 0).toFixed(2);
-      return [m.surname + ", " + m.first_name, ...amounts, total];
-    });
-    return { title: "Summary of Offerings per Member (" + year + ")", columns, rows };
+    const { data: m } = await supabaseClient.from("members").select("*").eq("id", memberId).single();
+    const sectionName = (sectionsCache.find(s => s.id == sectionId) || {}).name || "";
+    return { title: "Personal Data — Individual", columns: personalDataColumns(), rows: m ? [personalDataRow(m, sectionName)] : [] };
   }
 
-  async function buildSectionOfferingsReport() {
+  async function buildPersonalDataSection() {
+    const sectionId = document.getElementById("rep_section").value;
+    const { data } = await supabaseClient.from("members").select("*").eq("section_id", sectionId).order("surname");
+    const sectionName = (sectionsCache.find(s => s.id == sectionId) || {}).name || "";
+    return { title: "Personal Data — Section", columns: personalDataColumns(), rows: (data || []).map(m => personalDataRow(m, sectionName)) };
+  }
+
+  async function buildPersonalDataCongregation() {
     const congregationId = document.getElementById("rep_congregation").value;
-    const year = parseInt(document.getElementById("rep_year").value, 10);
-    const sectionTypes = getSectionTrackedTypes();
     const sections = sectionsCache.filter(s => s.congregation_id == congregationId);
     const sectionIds = sections.map(s => s.id);
-    const offerings = await fetchOfferings(sectionTypes.map(t => t.id), year, "section_id", sectionIds);
-
-    const columns = ["Section", ...sectionTypes.map(t => t.name), "Total"];
-    const rows = sections.map(s => {
-      const amounts = sectionTypes.map(t =>
-        offerings.filter(o => o.section_id === s.id && o.offering_type_id === t.id).reduce((a, o) => a + parseFloat(o.amount), 0).toFixed(2));
-      const total = amounts.reduce((a, v) => a + parseFloat(v), 0).toFixed(2);
-      return [s.name, ...amounts, total];
-    });
-    return { title: "Summary of Section Offerings (" + year + ")", columns, rows };
+    const { data } = sectionIds.length
+      ? await supabaseClient.from("members").select("*").in("section_id", sectionIds).order("surname")
+      : { data: [] };
+    const sectionNameOf = (id) => (sections.find(s => s.id === id) || {}).name || "";
+    return { title: "Personal Data — Whole Congregation", columns: personalDataColumns(), rows: (data || []).map(m => personalDataRow(m, sectionNameOf(m.section_id))) };
   }
 
-  async function buildHCCongregationReport() {
-    const congregationId = document.getElementById("rep_congregation").value;
-    const year = parseInt(document.getElementById("rep_year").value, 10);
-    const hcTypes = getHCTypes();
-    const sectionIds = sectionsCache.filter(s => s.congregation_id == congregationId).map(s => s.id);
-    const offerings = await fetchOfferings(hcTypes.map(t => t.id), year, "section_id", sectionIds);
+  // ---- Generic builder for a single section-tracked offering type (Sunday, Christmas, New Year,
+  // Maundy Thursday, Good Friday, or a chosen Holy Communion day), broken down by period. ----
 
-    const rows = hcTypes.map(t => [t.name, offerings.filter(o => o.offering_type_id === t.id).reduce((a, o) => a + parseFloat(o.amount), 0).toFixed(2)]);
-    const grand = rows.reduce((a, r) => a + parseFloat(r[1]), 0).toFixed(2);
-    rows.push(["Total", grand]);
-    return { title: "Holy Communion Offerings — Whole Congregation (" + year + ")", columns: ["Holy Communion Offering", "Amount"], rows };
-  }
-
-  async function buildHCSectionReport() {
-    const congregationId = document.getElementById("rep_congregation").value;
-    const year = parseInt(document.getElementById("rep_year").value, 10);
-    const hcTypes = getHCTypes();
-    const sections = sectionsCache.filter(s => s.congregation_id == congregationId);
-    const offerings = await fetchOfferings(hcTypes.map(t => t.id), year, "section_id", sections.map(s => s.id));
-
-    const columns = ["Section", ...hcTypes.map(t => t.name), "Total"];
-    const rows = sections.map(s => {
-      const amounts = hcTypes.map(t =>
-        offerings.filter(o => o.section_id === s.id && o.offering_type_id === t.id).reduce((a, o) => a + parseFloat(o.amount), 0).toFixed(2));
-      const total = amounts.reduce((a, v) => a + parseFloat(v), 0).toFixed(2);
-      return [s.name, ...amounts, total];
-    });
-    return { title: "Holy Communion Offerings — Per Section (" + year + ")", columns, rows };
-  }
-
-  // Generic builder for a single section-tracked offering type (e.g. Sunday), broken down by period.
   async function buildSectionTrackedReport(typeCode, scopeLevel, reportTitle) {
     const type = offeringTypesCache.find(t => t.code === typeCode);
     const year = parseInt(document.getElementById("rep_year").value, 10);
@@ -2151,8 +2308,8 @@
     return { title: reportTitle + " — Per Section (" + year + ")", columns, rows };
   }
 
-  // Shared builder for member-tracked, instalment-based offering types (Fundraising, Harvest)
-  // at congregation, section, or member scope.
+  // ---- Generic builder for member-tracked, instalment-based offering types (Fundraising, Harvest) ----
+
   async function buildMemberTrackedReport(typeCode, scopeLevel, reportTitle) {
     const type = offeringTypesCache.find(t => t.code === typeCode);
     const year = parseInt(document.getElementById("rep_year").value, 10);
@@ -2196,7 +2353,6 @@
       return { title: reportTitle + " — Per Section (" + year + ")", columns, rows };
     }
 
-    // member scope
     const columns = ["Member", ...(multiPeriod ? periodLabels : []), "Total"];
     const rows = members.map(m => {
       const periodTotals = multiPeriod ? periodLabels.map((_, i) => perMemberPeriod(m.id, i + 1).toFixed(2)) : [];
@@ -2205,20 +2361,129 @@
     return { title: reportTitle + " — Per Member (" + year + ")", columns, rows };
   }
 
+  // ---- Groups, committees, and roster reports ----
+
+  async function buildGroupMembersReport() {
+    const congregationId = document.getElementById("rep_congregation").value;
+    const groupType = document.getElementById("rep_group").value;
+    const sections = sectionsCache.filter(s => s.congregation_id == congregationId);
+    const sectionIds = sections.map(s => s.id);
+
+    const { data: members } = sectionIds.length
+      ? await supabaseClient.from("members").select("id, surname, first_name, section_id").in("section_id", sectionIds)
+      : { data: [] };
+    const memberIds = (members || []).map(m => m.id);
+    const { data: groups } = memberIds.length
+      ? await supabaseClient.from("member_groups").select("*").eq("group_type", groupType).in("member_id", memberIds)
+      : { data: [] };
+
+    const sectionNameOf = (id) => (sections.find(s => s.id === id) || {}).name || "";
+    const memberOf = (id) => (members || []).find(m => m.id === id);
+
+    const columns = ["Member", "Section", "Group Name", "Position", "Date Joined", "Date Badged", "Place"];
+    const rows = (groups || []).map(g => {
+      const m = memberOf(g.member_id);
+      return [m ? m.surname + ", " + m.first_name : "", m ? sectionNameOf(m.section_id) : "",
+        g.group_name || "", g.position || "", g.date_joined || "", g.date_badged || "", g.place_badged || ""];
+    });
+    return { title: groupType + " — Members", columns, rows };
+  }
+
+  async function buildCommitteeMembersReport() {
+    const committeeId = document.getElementById("rep_committee").value;
+    const committee = committeesCache.find(c => c.id == committeeId);
+    const { data } = await supabaseClient.from("member_committees").select("position, members(surname, first_name)").eq("committee_id", committeeId);
+
+    const columns = ["Member", "Position"];
+    const rows = (data || []).map(mc => [mc.members ? mc.members.surname + ", " + mc.members.first_name : "", mc.position || ""]);
+    return { title: (committee ? committee.name : "Committee") + " — Members", columns, rows };
+  }
+
+  async function buildSectionRosterReport() {
+    const sectionId = document.getElementById("rep_section").value;
+    const sectionName = (sectionsCache.find(s => s.id == sectionId) || {}).name || "";
+    const { data } = await supabaseClient.from("members").select("surname, first_name, gender, membership_status, phone_number_1").eq("section_id", sectionId).order("surname");
+
+    const columns = ["Surname", "First Name", "Gender", "Membership Status", "Phone"];
+    const rows = (data || []).map(m => [m.surname, m.first_name, m.gender || "", m.membership_status || "", m.phone_number_1 || ""]);
+    return { title: "Members of " + sectionName, columns, rows };
+  }
+
+  async function buildAllEldersReport() {
+    const congregationId = document.getElementById("rep_congregation").value;
+    const sections = sectionsCache.filter(s => s.congregation_id == congregationId);
+    const sectionIds = sections.map(s => s.id);
+    const { data } = sectionIds.length
+      ? await supabaseClient.from("section_elders").select("is_elder_in_charge, section_id, members(surname, first_name)").in("section_id", sectionIds)
+      : { data: [] };
+
+    const sectionNameOf = (id) => (sections.find(s => s.id === id) || {}).name || "";
+    const columns = ["Section", "Elder", "Elder-in-Charge"];
+    const rows = (data || []).map(e => [sectionNameOf(e.section_id), e.members ? e.members.surname + ", " + e.members.first_name : "", e.is_elder_in_charge ? "Yes" : "No"]);
+    return { title: "Members Who Are Elders", columns, rows };
+  }
+
+  async function buildAllStewardsReport() {
+    const congregationId = document.getElementById("rep_congregation").value;
+    const sections = sectionsCache.filter(s => s.congregation_id == congregationId);
+    const sectionIds = sections.map(s => s.id);
+    const { data } = sectionIds.length
+      ? await supabaseClient.from("section_stewards").select("section_id, members(surname, first_name)").in("section_id", sectionIds)
+      : { data: [] };
+
+    const sectionNameOf = (id) => (sections.find(s => s.id === id) || {}).name || "";
+    const columns = ["Section", "Steward"];
+    const rows = (data || []).map(s => [sectionNameOf(s.section_id), s.members ? s.members.surname + ", " + s.members.first_name : ""]);
+    return { title: "Members Who Are Stewards", columns, rows };
+  }
+
   const REPORT_BUILDERS = {
-    member_info: buildMemberInfoReport,
-    sunday_congregation: () => buildSectionTrackedReport("SUNDAY", "congregation", "Sunday Offerings"),
+    personal_individual: buildPersonalDataIndividual,
+    personal_section: buildPersonalDataSection,
+    personal_congregation: buildPersonalDataCongregation,
+
     sunday_section: () => buildSectionTrackedReport("SUNDAY", "section", "Sunday Offerings"),
-    offerings_per_member: buildOfferingsPerMemberReport,
-    section_offerings: buildSectionOfferingsReport,
-    hc_congregation: buildHCCongregationReport,
-    hc_section: buildHCSectionReport,
-    fundraising_congregation: () => buildMemberTrackedReport("FUNDRAISING", "congregation", "Fundraising Offerings"),
-    fundraising_section: () => buildMemberTrackedReport("FUNDRAISING", "section", "Fundraising Offerings"),
+    sunday_congregation: () => buildSectionTrackedReport("SUNDAY", "congregation", "Sunday Offerings"),
+
     fundraising_member: () => buildMemberTrackedReport("FUNDRAISING", "member", "Fundraising Offerings"),
-    harvest_congregation: () => buildMemberTrackedReport("HARVEST", "congregation", "Harvest Offerings"),
+    fundraising_section: () => buildMemberTrackedReport("FUNDRAISING", "section", "Fundraising Offerings"),
+    fundraising_congregation: () => buildMemberTrackedReport("FUNDRAISING", "congregation", "Fundraising Offerings"),
+
+    hcday_member: () => {
+      const code = document.getElementById("rep_hcday").value;
+      const name = (offeringTypesCache.find(t => t.code === code) || {}).name || "Holy Communion";
+      return buildMemberTrackedReport(code, "member", name);
+    },
+    hcday_section: () => {
+      const code = document.getElementById("rep_hcday").value;
+      const name = (offeringTypesCache.find(t => t.code === code) || {}).name || "Holy Communion";
+      return buildMemberTrackedReport(code, "section", name);
+    },
+    hcday_congregation: () => {
+      const code = document.getElementById("rep_hcday").value;
+      const name = (offeringTypesCache.find(t => t.code === code) || {}).name || "Holy Communion";
+      return buildMemberTrackedReport(code, "congregation", name);
+    },
+
+    harvest_member: () => buildMemberTrackedReport("HARVEST", "member", "Harvest Offerings"),
     harvest_section: () => buildMemberTrackedReport("HARVEST", "section", "Harvest Offerings"),
-    harvest_member: () => buildMemberTrackedReport("HARVEST", "member", "Harvest Offerings")
+    harvest_congregation: () => buildMemberTrackedReport("HARVEST", "congregation", "Harvest Offerings"),
+
+    christmas_section: () => buildSectionTrackedReport("CHRISTMAS", "section", "Christmas Offering"),
+    christmas_congregation: () => buildSectionTrackedReport("CHRISTMAS", "congregation", "Christmas Offering"),
+    newyear_section: () => buildSectionTrackedReport("NEW_YEAR", "section", "New Year Offering"),
+    newyear_congregation: () => buildSectionTrackedReport("NEW_YEAR", "congregation", "New Year Offering"),
+    maundy_section: () => buildSectionTrackedReport("MAUNDY_THURSDAY", "section", "Maundy Thursday Offering"),
+    maundy_congregation: () => buildSectionTrackedReport("MAUNDY_THURSDAY", "congregation", "Maundy Thursday Offering"),
+    goodfriday_section: () => buildSectionTrackedReport("GOOD_FRIDAY", "section", "Good Friday Offering"),
+    goodfriday_congregation: () => buildSectionTrackedReport("GOOD_FRIDAY", "congregation", "Good Friday Offering"),
+
+    group_members: buildGroupMembersReport,
+    committee_members: buildCommitteeMembersReport,
+
+    section_roster: buildSectionRosterReport,
+    all_elders: buildAllEldersReport,
+    all_stewards: buildAllStewardsReport
   };
 
   let currentReport = null;
@@ -2278,6 +2543,73 @@
     const wb = window.XLSX.utils.book_new();
     window.XLSX.utils.book_append_sheet(wb, ws, "Report");
     window.XLSX.writeFile(wb, currentReport.title.replace(/[^a-z0-9]/gi, "_") + ".xlsx");
+  });
+
+  // ---------------------------------------------------------------
+  // My Details (Member role: read-only view of their own record + offerings)
+  // ---------------------------------------------------------------
+
+  let myCurrentReport = null;
+
+  async function initMyDataPanel() {
+    if (!currentUser.member_id) {
+      document.getElementById("myDetailsTable").innerHTML = `<tr><td style="color:var(--ink-soft);">No member record is linked to your login yet. Contact your administrator.</td></tr>`;
+      return;
+    }
+
+    const { data: m } = await supabaseClient.from("members").select("*").eq("id", currentUser.member_id).single();
+    if (m) {
+      const rows = [
+        ["Full Name", [m.surname, m.first_name, m.other_name].filter(Boolean).join(" ")],
+        ["Gender", m.gender || ""], ["Membership Status", m.membership_status || ""],
+        ["Marital Status", m.marital_status || ""], ["Date of Birth", m.date_of_birth || ""],
+        ["Place of Birth", m.place_of_birth || ""], ["NRC Number", m.nrc_number || ""],
+        ["Date of Joining Congregation", m.date_joined_congregation || ""],
+        ["Date of Joining Section", m.date_joined_section || ""],
+        ["Favourite Hymn", m.favourite_hymn || ""], ["Favourite Scripture", m.favourite_scripture || ""],
+        ["Occupation", m.occupation || ""], ["Place of Work", m.place_of_work || ""],
+        ["Next of Kin", m.next_of_kin_name || ""], ["Next of Kin Phone", m.next_of_kin_phone || ""],
+        ["Next of Kin Address", m.next_of_kin_address || ""]
+      ];
+      document.getElementById("myDetailsTable").innerHTML = rows.map(r => `<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join("");
+    }
+
+    if (!document.getElementById("my_year").value) document.getElementById("my_year").value = new Date().getFullYear();
+    await loadMyOfferings();
+  }
+
+  async function loadMyOfferings() {
+    const year = parseInt(document.getElementById("my_year").value, 10);
+    const { data } = await supabaseClient
+      .from("offerings").select("amount, period_number, offering_types(name)")
+      .eq("member_id", currentUser.member_id).eq("year", year).order("offering_type_id");
+
+    const columns = ["Offering", "Period", "Amount"];
+    const rows = (data || []).map(o => [o.offering_types ? o.offering_types.name : "", o.period_number, o.amount]);
+    myCurrentReport = { title: "My Offerings (" + year + ")", columns, rows };
+
+    document.getElementById("myOfferingsTable").innerHTML = "<thead><tr>" + columns.map(c => `<th>${c}</th>`).join("") + "</tr></thead><tbody>" +
+      (rows.length ? rows.map(r => "<tr>" + r.map(c => `<td>${c}</td>`).join("") + "</tr>").join("") : `<tr><td colspan="3" style="color:var(--ink-soft);">No offerings recorded for this year.</td></tr>`) +
+      "</tbody>";
+  }
+
+  document.getElementById("my_loadOfferingsBtn").addEventListener("click", loadMyOfferings);
+
+  document.getElementById("my_downloadPdfBtn").addEventListener("click", () => {
+    if (!myCurrentReport) return;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    doc.text(myCurrentReport.title, 14, 15);
+    doc.autoTable({ head: [myCurrentReport.columns], body: myCurrentReport.rows, startY: 20, styles: { fontSize: 8 } });
+    doc.save("my_offerings.pdf");
+  });
+
+  document.getElementById("my_downloadExcelBtn").addEventListener("click", () => {
+    if (!myCurrentReport) return;
+    const ws = window.XLSX.utils.aoa_to_sheet([myCurrentReport.columns, ...myCurrentReport.rows]);
+    const wb = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(wb, ws, "My Offerings");
+    window.XLSX.writeFile(wb, "my_offerings.xlsx");
   });
 
   // If a session already exists (e.g. page refresh), skip straight to the dashboard.
