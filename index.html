@@ -540,6 +540,26 @@
           <label for="m_whatsapp">WhatsApp</label>
           <input type="text" id="m_whatsapp">
         </div>
+        <div>
+          <label for="m_occupation">Occupation</label>
+          <input type="text" id="m_occupation">
+        </div>
+        <div>
+          <label for="m_place_of_work">Place of work</label>
+          <input type="text" id="m_place_of_work">
+        </div>
+        <div>
+          <label for="m_nok_name">Next of kin</label>
+          <input type="text" id="m_nok_name">
+        </div>
+        <div>
+          <label for="m_nok_phone">Next of kin phone number</label>
+          <input type="text" id="m_nok_phone">
+        </div>
+        <div class="field-full">
+          <label for="m_nok_address">Next of kin address</label>
+          <input type="text" id="m_nok_address">
+        </div>
         <div class="field-full">
           <div class="msg" id="memberMsg"></div>
           <button type="submit" id="memberBtn">Add member</button>
@@ -1285,6 +1305,11 @@
     document.getElementById("m_phone2").value = member.phone_number_2 || "";
     document.getElementById("m_email").value = member.email || "";
     document.getElementById("m_whatsapp").value = member.whatsapp || "";
+    document.getElementById("m_occupation").value = member.occupation || "";
+    document.getElementById("m_place_of_work").value = member.place_of_work || "";
+    document.getElementById("m_nok_name").value = member.next_of_kin_name || "";
+    document.getElementById("m_nok_phone").value = member.next_of_kin_phone || "";
+    document.getElementById("m_nok_address").value = member.next_of_kin_address || "";
 
     document.getElementById("memberSubforms").style.display = "block";
     renderGroupsTable();
@@ -1491,7 +1516,12 @@
       phone_number_1: document.getElementById("m_phone1").value.trim() || null,
       phone_number_2: document.getElementById("m_phone2").value.trim() || null,
       email: document.getElementById("m_email").value.trim() || null,
-      whatsapp: document.getElementById("m_whatsapp").value.trim() || null
+      whatsapp: document.getElementById("m_whatsapp").value.trim() || null,
+      occupation: document.getElementById("m_occupation").value.trim() || null,
+      place_of_work: document.getElementById("m_place_of_work").value.trim() || null,
+      next_of_kin_name: document.getElementById("m_nok_name").value.trim() || null,
+      next_of_kin_phone: document.getElementById("m_nok_phone").value.trim() || null,
+      next_of_kin_address: document.getElementById("m_nok_address").value.trim() || null
     };
 
     memberBtn.disabled = true;
@@ -1998,7 +2028,8 @@
 
     const columns = ["Full Name", "Gender", "Membership Status", "Marital Status", "Date of Birth", "Place of Birth",
       "NRC Number", "Baptism/Confirmation Date", "Place", "Minister", "Date Joined Congregation", "Section",
-      "Date Joined Section", "Favourite Hymn", "Favourite Scripture"];
+      "Date Joined Section", "Favourite Hymn", "Favourite Scripture", "Occupation", "Place of Work",
+      "Next of Kin", "Next of Kin Phone", "Next of Kin Address"];
     const sectionName = (sectionsCache.find(s => s.id == sectionId) || {}).name || "";
 
     const rows = (data || []).map(m => [
@@ -2008,7 +2039,9 @@
       (m.membership_status === "Full Member" ? m.date_of_confirmation : m.date_of_baptism) || "",
       m.place_of_baptism_confirmation || "", m.baptizing_confirming_minister || "",
       m.date_joined_congregation || "", sectionName, m.date_joined_section || "",
-      m.favourite_hymn || "", m.favourite_scripture || ""
+      m.favourite_hymn || "", m.favourite_scripture || "",
+      m.occupation || "", m.place_of_work || "",
+      m.next_of_kin_name || "", m.next_of_kin_phone || "", m.next_of_kin_address || ""
     ]);
     return { title: "Member Personal Information", columns, rows };
   }
