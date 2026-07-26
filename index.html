@@ -863,12 +863,19 @@
     dashCard.classList.add("show");
 
     const canSetup = (data.role === "Admin");
-    const canManageMembers = (data.role === "Admin" || data.role === "Elder-in-charge");
+    const canManageMembers = (data.role === "Elder" || data.role === "Elder-in-charge");
+    const canViewMembers = (data.role === "Admin" || canManageMembers);
     const canManagePeople = (data.role === "Admin");
 
     document.getElementById("tabSetupBtn").style.display = canSetup ? "inline-block" : "none";
-    document.getElementById("tabMembersBtn").style.display = canManageMembers ? "inline-block" : "none";
+    document.getElementById("tabMembersBtn").style.display = canViewMembers ? "inline-block" : "none";
     document.getElementById("tabPeopleBtn").style.display = canManagePeople ? "inline-block" : "none";
+
+    // Admin can view members but not add/edit/delete them -- enforced at the
+    // database level too (see members_insert/update/delete RLS policies),
+    // this just hides the write UI to match.
+    document.getElementById("memberForm").style.display = canManageMembers ? "grid" : "none";
+    window.canManageMembers = canManageMembers;
 
     if (canSetup) switchPanel("setupPanel");
     else if (canManageMembers) switchPanel("membersPanel");
@@ -1245,20 +1252,22 @@
           <td>${m.first_name}</td>
           <td>${m.membership_status || ""}</td>
           <td>${m.date_joined_section || ""}</td>
-          <td>
+          <td>${window.canManageMembers ? `
             <button type="button" class="logout-btn edit-member-btn" data-id="${m.id}" style="padding:6px 12px;font-size:12px;">Edit</button>
             <button type="button" class="logout-btn delete-member-btn" data-id="${m.id}" data-name="${m.surname}, ${m.first_name}" style="padding:6px 12px;font-size:12px;color:var(--error);border-color:#F0D4CC;margin-left:6px;">Delete</button>
-          </td>
+          ` : `<span style="color:var(--ink-soft);font-size:12px;">View only</span>`}</td>
         </tr>`).join("")
       : `<tr><td colspan="5" style="color:var(--ink-soft);">No members yet in this section.</td></tr>`;
 
-    tbody.querySelectorAll(".edit-member-btn").forEach(btn => {
-      btn.addEventListener("click", () => loadMemberIntoForm(btn.dataset.id, data.find(m => m.id == btn.dataset.id)));
-    });
+    if (window.canManageMembers) {
+      tbody.querySelectorAll(".edit-member-btn").forEach(btn => {
+        btn.addEventListener("click", () => loadMemberIntoForm(btn.dataset.id, data.find(m => m.id == btn.dataset.id)));
+      });
 
-    tbody.querySelectorAll(".delete-member-btn").forEach(btn => {
-      btn.addEventListener("click", () => deleteMember(btn.dataset.id, btn.dataset.name));
-    });
+      tbody.querySelectorAll(".delete-member-btn").forEach(btn => {
+        btn.addEventListener("click", () => deleteMember(btn.dataset.id, btn.dataset.name));
+      });
+    }
   }
 
   async function deleteMember(id, name) {
