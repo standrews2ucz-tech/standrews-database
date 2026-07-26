@@ -331,6 +331,7 @@
       <button class="tab-btn" data-panel="membersPanel" id="tabMembersBtn">Members</button>
       <button class="tab-btn" data-panel="peoplePanel" id="tabPeopleBtn">People</button>
       <button class="tab-btn" data-panel="offeringsPanel" id="tabOfferingsBtn">Offerings</button>
+      <button class="tab-btn" data-panel="reportsPanel" id="tabReportsBtn">Reports</button>
     </div>
 
     <!-- ---------- SETUP PANEL (Admin only) ---------- -->
@@ -705,9 +706,71 @@
       </table>
     </div>
 
+    <!-- ---------- REPORTS PANEL ---------- -->
+    <div class="panel" id="reportsPanel">
+
+      <div class="subhead">Generate a report</div>
+      <form id="reportForm" class="form-grid">
+        <div class="field-full">
+          <label for="rep_type">Report</label>
+          <select id="rep_type">
+            <optgroup label="Members">
+              <option value="member_info">Member personal information</option>
+            </optgroup>
+            <optgroup label="Offerings">
+              <option value="offerings_per_member">Summary of offerings per member</option>
+              <option value="section_offerings">Summary of section offerings</option>
+              <option value="hc_congregation">Holy Communion — whole congregation</option>
+              <option value="hc_section">Holy Communion — per section</option>
+              <option value="fundraising_congregation">Fundraising — whole congregation</option>
+              <option value="fundraising_section">Fundraising — per section</option>
+              <option value="fundraising_member">Fundraising — per member</option>
+              <option value="harvest_congregation">Harvest — whole congregation</option>
+              <option value="harvest_section">Harvest — per section</option>
+              <option value="harvest_member">Harvest — per member</option>
+            </optgroup>
+          </select>
+        </div>
+        <div id="rep_congregation_wrap">
+          <label for="rep_congregation">Congregation</label>
+          <select id="rep_congregation"></select>
+        </div>
+        <div id="rep_section_wrap">
+          <label for="rep_section">Section</label>
+          <select id="rep_section"></select>
+        </div>
+        <div id="rep_member_wrap" style="display:none;">
+          <label for="rep_member">Member</label>
+          <select id="rep_member"></select>
+        </div>
+        <div id="rep_year_wrap">
+          <label for="rep_year">Year</label>
+          <input type="number" id="rep_year" min="2000" max="2100">
+        </div>
+        <div class="field-full">
+          <div class="msg" id="reportMsg"></div>
+          <button type="button" id="rep_generateBtn">Generate</button>
+        </div>
+      </form>
+
+      <div id="reportResult" style="display:none;">
+        <div class="subhead" id="reportResultTitle"></div>
+        <div class="inline-row" style="margin-bottom:10px;">
+          <button type="button" id="rep_downloadPdfBtn" style="width:auto;">Download PDF</button>
+          <button type="button" id="rep_downloadExcelBtn" style="width:auto;">Download Excel</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table" id="reportTable"></table>
+        </div>
+      </div>
+    </div>
+
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf-autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
   // ---------------------------------------------------------------
   // CONFIGURE THESE TWO VALUES before deploying
@@ -896,6 +959,7 @@
     populateLeadershipSection();
     await refreshLeadershipTable();
     if (currentUser) await initOfferingsPanel();
+    if (currentUser) await initReportsPanel();
   }
 
   async function refreshPresbyteriesTable() {
@@ -1825,6 +1889,309 @@
       });
     });
   }
+
+  // ---------------------------------------------------------------
+  // Reports
+  // ---------------------------------------------------------------
+
+  const REPORT_CONFIG = {
+    member_info:              { needs: ["section", "member"], year: false },
+    offerings_per_member:     { needs: ["section"], year: true },
+    section_offerings:        { needs: ["congregation"], year: true },
+    hc_congregation:          { needs: ["congregation"], year: true },
+    hc_section:                { needs: ["congregation"], year: true },
+    fundraising_congregation: { needs: ["congregation"], year: true },
+    fundraising_section:      { needs: ["congregation"], year: true },
+    fundraising_member:       { needs: ["section"], year: true },
+    harvest_congregation:     { needs: ["congregation"], year: true },
+    harvest_section:           { needs: ["congregation"], year: true },
+    harvest_member:            { needs: ["section"], year: true }
+  };
+
+  async function initReportsPanel() {
+    if (!offeringTypesCache.length) {
+      const { data } = await supabaseClient.from("offering_types").select("*");
+      offeringTypesCache = data || [];
+    }
+    if (!document.getElementById("rep_year").value) {
+      document.getElementById("rep_year").value = new Date().getFullYear();
+    }
+    onReportTypeChange();
+  }
+
+  document.getElementById("rep_type").addEventListener("change", onReportTypeChange);
+
+  function onReportTypeChange() {
+    const cfg = REPORT_CONFIG[document.getElementById("rep_type").value];
+    document.getElementById("rep_congregation_wrap").style.display = cfg.needs.includes("congregation") ? "block" : "none";
+    document.getElementById("rep_section_wrap").style.display = cfg.needs.includes("section") ? "block" : "none";
+    document.getElementById("rep_member_wrap").style.display = cfg.needs.includes("member") ? "block" : "none";
+    document.getElementById("rep_year_wrap").style.display = cfg.year ? "block" : "none";
+
+    if (cfg.needs.includes("congregation")) populateReportCongregationSelect();
+    if (cfg.needs.includes("section")) populateReportSectionSelect();
+    document.getElementById("reportResult").style.display = "none";
+  }
+
+  function populateReportCongregationSelect() {
+    const select = document.getElementById("rep_congregation");
+    if (currentUser.role === "Admin") {
+      select.disabled = false;
+      select.innerHTML = congregationsCache.map(c => `<option value="${c.id}">${c.name}</option>`).join("") || `<option value="">No congregations yet</option>`;
+    } else {
+      const myCong = congregationsCache.find(c => c.id === currentUser.congregation_id);
+      select.innerHTML = myCong ? `<option value="${myCong.id}">${myCong.name}</option>` : `<option value="">No congregation assigned</option>`;
+      select.disabled = true;
+    }
+  }
+
+  function populateReportSectionSelect() {
+    const select = document.getElementById("rep_section");
+    if (currentUser.role === "Admin") {
+      select.disabled = false;
+      select.innerHTML = sectionsCache.map(s => `<option value="${s.id}">${s.congregation_name} — ${s.name}</option>`).join("") || `<option value="">No sections yet</option>`;
+    } else {
+      const mySection = sectionsCache.find(s => s.id === currentUser.section_id);
+      select.innerHTML = mySection ? `<option value="${mySection.id}">${mySection.congregation_name} — ${mySection.name}</option>` : `<option value="">No section assigned</option>`;
+      select.disabled = true;
+    }
+    populateReportMemberSelect();
+  }
+
+  document.getElementById("rep_section").addEventListener("change", populateReportMemberSelect);
+
+  async function populateReportMemberSelect() {
+    const select = document.getElementById("rep_member");
+    const sectionId = document.getElementById("rep_section").value;
+    if (!sectionId) { select.innerHTML = `<option value="">All members</option>`; return; }
+
+    const { data } = await supabaseClient.from("members").select("id, surname, first_name").eq("section_id", sectionId).order("surname");
+    select.innerHTML = `<option value="">All members in this section</option>` +
+      (data || []).map(m => `<option value="${m.id}">${m.surname}, ${m.first_name}</option>`).join("");
+  }
+
+  function getMemberTrackedTypes() { return offeringTypesCache.filter(t => t.tracking_level === "member"); }
+  function getSectionTrackedTypes() { return offeringTypesCache.filter(t => t.tracking_level === "section"); }
+  function getHCTypes() { return offeringTypesCache.filter(t => t.code.includes("HC")); }
+
+  async function fetchOfferings(typeIds, year, filterCol, filterIds) {
+    if (!filterIds.length) return [];
+    const { data } = await supabaseClient.from("offerings")
+      .select(filterCol + ", offering_type_id, amount, period_number")
+      .eq("year", year).in("offering_type_id", typeIds).in(filterCol, filterIds);
+    return data || [];
+  }
+
+  // ---- Report builders ----
+
+  async function buildMemberInfoReport() {
+    const sectionId = document.getElementById("rep_section").value;
+    const memberId = document.getElementById("rep_member").value;
+    const query = memberId
+      ? supabaseClient.from("members").select("*").eq("id", memberId)
+      : supabaseClient.from("members").select("*").eq("section_id", sectionId).order("surname");
+    const { data } = await query;
+
+    const columns = ["Full Name", "Gender", "Membership Status", "Marital Status", "Date of Birth", "Place of Birth",
+      "NRC Number", "Baptism/Confirmation Date", "Place", "Minister", "Date Joined Congregation", "Section",
+      "Date Joined Section", "Favourite Hymn", "Favourite Scripture"];
+    const sectionName = (sectionsCache.find(s => s.id == sectionId) || {}).name || "";
+
+    const rows = (data || []).map(m => [
+      [m.surname, m.first_name, m.other_name].filter(Boolean).join(" "),
+      m.gender || "", m.membership_status || "", m.marital_status || "",
+      m.date_of_birth || "", m.place_of_birth || "", m.nrc_number || "",
+      (m.membership_status === "Full Member" ? m.date_of_confirmation : m.date_of_baptism) || "",
+      m.place_of_baptism_confirmation || "", m.baptizing_confirming_minister || "",
+      m.date_joined_congregation || "", sectionName, m.date_joined_section || "",
+      m.favourite_hymn || "", m.favourite_scripture || ""
+    ]);
+    return { title: "Member Personal Information", columns, rows };
+  }
+
+  async function buildOfferingsPerMemberReport() {
+    const sectionId = document.getElementById("rep_section").value;
+    const year = parseInt(document.getElementById("rep_year").value, 10);
+    const memberTypes = getMemberTrackedTypes();
+
+    const { data: members } = await supabaseClient.from("members").select("id, surname, first_name").eq("section_id", sectionId).order("surname");
+    const memberIds = (members || []).map(m => m.id);
+    const offerings = await fetchOfferings(memberTypes.map(t => t.id), year, "member_id", memberIds);
+
+    const columns = ["Member", ...memberTypes.map(t => t.name), "Total"];
+    const rows = (members || []).map(m => {
+      const amounts = memberTypes.map(t =>
+        offerings.filter(o => o.member_id === m.id && o.offering_type_id === t.id).reduce((a, o) => a + parseFloat(o.amount), 0).toFixed(2));
+      const total = amounts.reduce((a, v) => a + parseFloat(v), 0).toFixed(2);
+      return [m.surname + ", " + m.first_name, ...amounts, total];
+    });
+    return { title: "Summary of Offerings per Member (" + year + ")", columns, rows };
+  }
+
+  async function buildSectionOfferingsReport() {
+    const congregationId = document.getElementById("rep_congregation").value;
+    const year = parseInt(document.getElementById("rep_year").value, 10);
+    const sectionTypes = getSectionTrackedTypes();
+    const sections = sectionsCache.filter(s => s.congregation_id == congregationId);
+    const sectionIds = sections.map(s => s.id);
+    const offerings = await fetchOfferings(sectionTypes.map(t => t.id), year, "section_id", sectionIds);
+
+    const columns = ["Section", ...sectionTypes.map(t => t.name), "Total"];
+    const rows = sections.map(s => {
+      const amounts = sectionTypes.map(t =>
+        offerings.filter(o => o.section_id === s.id && o.offering_type_id === t.id).reduce((a, o) => a + parseFloat(o.amount), 0).toFixed(2));
+      const total = amounts.reduce((a, v) => a + parseFloat(v), 0).toFixed(2);
+      return [s.name, ...amounts, total];
+    });
+    return { title: "Summary of Section Offerings (" + year + ")", columns, rows };
+  }
+
+  async function buildHCCongregationReport() {
+    const congregationId = document.getElementById("rep_congregation").value;
+    const year = parseInt(document.getElementById("rep_year").value, 10);
+    const hcTypes = getHCTypes();
+    const sectionIds = sectionsCache.filter(s => s.congregation_id == congregationId).map(s => s.id);
+    const offerings = await fetchOfferings(hcTypes.map(t => t.id), year, "section_id", sectionIds);
+
+    const rows = hcTypes.map(t => [t.name, offerings.filter(o => o.offering_type_id === t.id).reduce((a, o) => a + parseFloat(o.amount), 0).toFixed(2)]);
+    const grand = rows.reduce((a, r) => a + parseFloat(r[1]), 0).toFixed(2);
+    rows.push(["Total", grand]);
+    return { title: "Holy Communion Offerings — Whole Congregation (" + year + ")", columns: ["Holy Communion Offering", "Amount"], rows };
+  }
+
+  async function buildHCSectionReport() {
+    const congregationId = document.getElementById("rep_congregation").value;
+    const year = parseInt(document.getElementById("rep_year").value, 10);
+    const hcTypes = getHCTypes();
+    const sections = sectionsCache.filter(s => s.congregation_id == congregationId);
+    const offerings = await fetchOfferings(hcTypes.map(t => t.id), year, "section_id", sections.map(s => s.id));
+
+    const columns = ["Section", ...hcTypes.map(t => t.name), "Total"];
+    const rows = sections.map(s => {
+      const amounts = hcTypes.map(t =>
+        offerings.filter(o => o.section_id === s.id && o.offering_type_id === t.id).reduce((a, o) => a + parseFloat(o.amount), 0).toFixed(2));
+      const total = amounts.reduce((a, v) => a + parseFloat(v), 0).toFixed(2);
+      return [s.name, ...amounts, total];
+    });
+    return { title: "Holy Communion Offerings — Per Section (" + year + ")", columns, rows };
+  }
+
+  // Shared builder for member-tracked, instalment-based offering types (Fundraising, Harvest)
+  // at congregation, section, or member scope.
+  async function buildMemberTrackedReport(typeCode, scopeLevel, reportTitle) {
+    const type = offeringTypesCache.find(t => t.code === typeCode);
+    const year = parseInt(document.getElementById("rep_year").value, 10);
+    const periodLabels = buildPeriodOptions(type.periods_per_year).map(p => p.label);
+    const multiPeriod = periodLabels.length > 1;
+
+    let sections;
+    if (scopeLevel === "member") {
+      const sectionId = document.getElementById("rep_section").value;
+      sections = sectionsCache.filter(s => s.id == sectionId);
+    } else {
+      const congregationId = document.getElementById("rep_congregation").value;
+      sections = sectionsCache.filter(s => s.congregation_id == congregationId);
+    }
+    const sectionIds = sections.map(s => s.id);
+
+    const { data: memberRows } = sectionIds.length
+      ? await supabaseClient.from("members").select("id, surname, first_name, section_id").in("section_id", sectionIds)
+      : { data: [] };
+    const members = memberRows || [];
+    const offerings = await fetchOfferings([type.id], year, "member_id", members.map(m => m.id));
+
+    const perMemberTotal = (id) => offerings.filter(o => o.member_id === id).reduce((a, o) => a + parseFloat(o.amount), 0);
+    const perMemberPeriod = (id, p) => offerings.filter(o => o.member_id === id && o.period_number === p).reduce((a, o) => a + parseFloat(o.amount), 0);
+
+    if (scopeLevel === "congregation") {
+      const columns = [...(multiPeriod ? periodLabels : []), "Total"];
+      const periodTotals = multiPeriod ? periodLabels.map((_, i) => members.reduce((a, m) => a + perMemberPeriod(m.id, i + 1), 0).toFixed(2)) : [];
+      const grand = members.reduce((a, m) => a + perMemberTotal(m.id), 0).toFixed(2);
+      return { title: reportTitle + " — Whole Congregation (" + year + ")", columns, rows: [[...periodTotals, grand]] };
+    }
+
+    if (scopeLevel === "section") {
+      const columns = ["Section", ...(multiPeriod ? periodLabels : []), "Total"];
+      const rows = sections.map(s => {
+        const sectionMembers = members.filter(m => m.section_id === s.id);
+        const periodTotals = multiPeriod ? periodLabels.map((_, i) => sectionMembers.reduce((a, m) => a + perMemberPeriod(m.id, i + 1), 0).toFixed(2)) : [];
+        const total = sectionMembers.reduce((a, m) => a + perMemberTotal(m.id), 0).toFixed(2);
+        return [s.name, ...periodTotals, total];
+      });
+      return { title: reportTitle + " — Per Section (" + year + ")", columns, rows };
+    }
+
+    // member scope
+    const columns = ["Member", ...(multiPeriod ? periodLabels : []), "Total"];
+    const rows = members.map(m => {
+      const periodTotals = multiPeriod ? periodLabels.map((_, i) => perMemberPeriod(m.id, i + 1).toFixed(2)) : [];
+      return [m.surname + ", " + m.first_name, ...periodTotals, perMemberTotal(m.id).toFixed(2)];
+    });
+    return { title: reportTitle + " — Per Member (" + year + ")", columns, rows };
+  }
+
+  const REPORT_BUILDERS = {
+    member_info: buildMemberInfoReport,
+    offerings_per_member: buildOfferingsPerMemberReport,
+    section_offerings: buildSectionOfferingsReport,
+    hc_congregation: buildHCCongregationReport,
+    hc_section: buildHCSectionReport,
+    fundraising_congregation: () => buildMemberTrackedReport("FUNDRAISING", "congregation", "Fundraising Offerings"),
+    fundraising_section: () => buildMemberTrackedReport("FUNDRAISING", "section", "Fundraising Offerings"),
+    fundraising_member: () => buildMemberTrackedReport("FUNDRAISING", "member", "Fundraising Offerings"),
+    harvest_congregation: () => buildMemberTrackedReport("HARVEST", "congregation", "Harvest Offerings"),
+    harvest_section: () => buildMemberTrackedReport("HARVEST", "section", "Harvest Offerings"),
+    harvest_member: () => buildMemberTrackedReport("HARVEST", "member", "Harvest Offerings")
+  };
+
+  let currentReport = null;
+
+  document.getElementById("rep_generateBtn").addEventListener("click", async () => {
+    const msg = document.getElementById("reportMsg");
+    const btn = document.getElementById("rep_generateBtn");
+    const builder = REPORT_BUILDERS[document.getElementById("rep_type").value];
+    if (!builder) return;
+
+    btn.disabled = true;
+    btn.textContent = "Generating...";
+    try {
+      currentReport = await builder();
+      renderReport(currentReport);
+      msg.classList.remove("show");
+    } catch (err) {
+      setMsg(msg, "Error: " + err.message, true);
+    }
+    btn.disabled = false;
+    btn.textContent = "Generate";
+  });
+
+  function renderReport(r) {
+    document.getElementById("reportResultTitle").textContent = r.title;
+    const table = document.getElementById("reportTable");
+    table.innerHTML = "<thead><tr>" + r.columns.map(c => `<th>${c}</th>`).join("") + "</tr></thead><tbody>" +
+      (r.rows.length
+        ? r.rows.map(row => "<tr>" + row.map(c => `<td>${c}</td>`).join("") + "</tr>").join("")
+        : `<tr><td colspan="${r.columns.length}" style="color:var(--ink-soft);">No data for this selection.</td></tr>`) +
+      "</tbody>";
+    document.getElementById("reportResult").style.display = "block";
+  }
+
+  document.getElementById("rep_downloadPdfBtn").addEventListener("click", () => {
+    if (!currentReport) return;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.text(currentReport.title, 14, 15);
+    doc.autoTable({ head: [currentReport.columns], body: currentReport.rows, startY: 20, styles: { fontSize: 8 } });
+    doc.save(currentReport.title.replace(/[^a-z0-9]/gi, "_") + ".pdf");
+  });
+
+  document.getElementById("rep_downloadExcelBtn").addEventListener("click", () => {
+    if (!currentReport) return;
+    const ws = window.XLSX.utils.aoa_to_sheet([currentReport.columns, ...currentReport.rows]);
+    const wb = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(wb, ws, "Report");
+    window.XLSX.writeFile(wb, currentReport.title.replace(/[^a-z0-9]/gi, "_") + ".xlsx");
+  });
 
   // If a session already exists (e.g. page refresh), skip straight to the dashboard.
   (async () => {
