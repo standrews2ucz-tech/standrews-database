@@ -2256,9 +2256,19 @@
   document.getElementById("rep_downloadPdfBtn").addEventListener("click", () => {
     if (!currentReport) return;
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     doc.text(currentReport.title, 14, 15);
-    doc.autoTable({ head: [currentReport.columns], body: currentReport.rows, startY: 20, styles: { fontSize: 8 } });
+    const colCount = currentReport.columns.length;
+    doc.autoTable({
+      head: [currentReport.columns],
+      body: currentReport.rows,
+      startY: 20,
+      margin: { left: 8, right: 8 },
+      styles: { fontSize: 8, cellPadding: 1.5, overflow: "linebreak" },
+      headStyles: { fontSize: 8 },
+      horizontalPageBreak: colCount > 8,
+      horizontalPageBreakRepeat: 0
+    });
     doc.save(currentReport.title.replace(/[^a-z0-9]/gi, "_") + ".pdf");
   });
 
