@@ -718,6 +718,8 @@
               <option value="member_info">Member personal information</option>
             </optgroup>
             <optgroup label="Offerings">
+              <option value="sunday_congregation">Sunday Offering — whole congregation</option>
+              <option value="sunday_section">Sunday Offering — per section</option>
               <option value="offerings_per_member">Summary of offerings per member</option>
               <option value="section_offerings">Summary of section offerings</option>
               <option value="hc_congregation">Holy Communion — whole congregation</option>
@@ -1896,6 +1898,8 @@
 
   const REPORT_CONFIG = {
     member_info:              { needs: ["section", "member"], year: false },
+    sunday_congregation:       { needs: ["congregation"], year: true },
+    sunday_section:             { needs: ["congregation"], year: true },
     offerings_per_member:     { needs: ["section"], year: true },
     section_offerings:        { needs: ["congregation"], year: true },
     hc_congregation:          { needs: ["congregation"], year: true },
@@ -2076,6 +2080,35 @@
     return { title: "Holy Communion Offerings — Per Section (" + year + ")", columns, rows };
   }
 
+  // Generic builder for a single section-tracked offering type (e.g. Sunday), broken down by period.
+  async function buildSectionTrackedReport(typeCode, scopeLevel, reportTitle) {
+    const type = offeringTypesCache.find(t => t.code === typeCode);
+    const year = parseInt(document.getElementById("rep_year").value, 10);
+    const periodLabels = buildPeriodOptions(type.periods_per_year).map(p => p.label);
+    const multiPeriod = periodLabels.length > 1;
+
+    const congregationId = document.getElementById("rep_congregation").value;
+    const sections = sectionsCache.filter(s => s.congregation_id == congregationId);
+    const offerings = await fetchOfferings([type.id], year, "section_id", sections.map(s => s.id));
+
+    const perSectionTotal = (id) => offerings.filter(o => o.section_id === id).reduce((a, o) => a + parseFloat(o.amount), 0);
+    const perSectionPeriod = (id, p) => offerings.filter(o => o.section_id === id && o.period_number === p).reduce((a, o) => a + parseFloat(o.amount), 0);
+
+    if (scopeLevel === "congregation") {
+      const columns = [...(multiPeriod ? periodLabels : []), "Total"];
+      const periodTotals = multiPeriod ? periodLabels.map((_, i) => sections.reduce((a, s) => a + perSectionPeriod(s.id, i + 1), 0).toFixed(2)) : [];
+      const grand = sections.reduce((a, s) => a + perSectionTotal(s.id), 0).toFixed(2);
+      return { title: reportTitle + " — Whole Congregation (" + year + ")", columns, rows: [[...periodTotals, grand]] };
+    }
+
+    const columns = ["Section", ...(multiPeriod ? periodLabels : []), "Total"];
+    const rows = sections.map(s => {
+      const periodTotals = multiPeriod ? periodLabels.map((_, i) => perSectionPeriod(s.id, i + 1).toFixed(2)) : [];
+      return [s.name, ...periodTotals, perSectionTotal(s.id).toFixed(2)];
+    });
+    return { title: reportTitle + " — Per Section (" + year + ")", columns, rows };
+  }
+
   // Shared builder for member-tracked, instalment-based offering types (Fundraising, Harvest)
   // at congregation, section, or member scope.
   async function buildMemberTrackedReport(typeCode, scopeLevel, reportTitle) {
@@ -2132,6 +2165,8 @@
 
   const REPORT_BUILDERS = {
     member_info: buildMemberInfoReport,
+    sunday_congregation: () => buildSectionTrackedReport("SUNDAY", "congregation", "Sunday Offerings"),
+    sunday_section: () => buildSectionTrackedReport("SUNDAY", "section", "Sunday Offerings"),
     offerings_per_member: buildOfferingsPerMemberReport,
     section_offerings: buildSectionOfferingsReport,
     hc_congregation: buildHCCongregationReport,
