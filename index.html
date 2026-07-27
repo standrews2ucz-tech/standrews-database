@@ -627,11 +627,19 @@
           <select id="lp_role" required>
             <option value="">Select...</option>
             <option>Minister-in-charge</option>
+            <option>Secretary</option>
+            <option>Vice Secretary</option>
+            <option>Treasurer</option>
+            <option>Stewardship Convener</option>
             <option>Elder-in-charge</option>
             <option>Elder</option>
             <option>Steward</option>
             <option>Member</option>
           </select>
+        </div>
+        <div id="lp_congregation_wrap" style="display:none;">
+          <label for="lp_congregation">Congregation</label>
+          <select id="lp_congregation"></select>
         </div>
         <div id="lp_section_wrap">
           <label for="lp_section">Section</label>
@@ -875,6 +883,8 @@
   const rolePill = document.getElementById("rolePill");
   const logoutBtn = document.getElementById("logoutBtn");
 
+  const EXECUTIVE_ROLES = ["Secretary", "Vice Secretary", "Treasurer", "Stewardship Convener"];
+
   let currentUser = null;       // { id, username, role, congregation_id, section_id }
   let congregationsCache = [];  // [{id, name}]
   let sectionsCache = [];       // [{id, name, congregation_id, congregation_name}]
@@ -931,7 +941,7 @@
     document.getElementById("tabBar").style.display = "flex";
 
     const canSetup = (data.role === "Admin");
-    const canManageMembers = (data.role === "Elder" || data.role === "Elder-in-charge");
+    const canManageMembers = (data.role === "Elder" || data.role === "Elder-in-charge" || EXECUTIVE_ROLES.includes(data.role));
     const canViewMembers = (data.role === "Admin" || data.role === "Minister-in-charge" || canManageMembers);
     const canManagePeople = (data.role === "Admin");
 
@@ -1276,12 +1286,20 @@
     const picker = document.getElementById("memberSectionPicker");
     const select = document.getElementById("memberSectionSelect");
 
-    if (currentUser.role === "Admin") {
+    if (currentUser.role === "Admin" || currentUser.role === "Minister-in-charge") {
       picker.style.display = "block";
       select.disabled = false;
       select.innerHTML = sectionsCache.length
         ? sectionsCache.map(s => `<option value="${s.id}">${s.congregation_name} — ${s.name}</option>`).join("")
         : `<option value="">No sections yet — create one under Organization Setup</option>`;
+    } else if (EXECUTIVE_ROLES.includes(currentUser.role)) {
+      // Executive: can pick any section, but only within their own congregation.
+      picker.style.display = "block";
+      select.disabled = false;
+      const myCongSections = sectionsCache.filter(s => s.congregation_id === currentUser.congregation_id);
+      select.innerHTML = myCongSections.length
+        ? myCongSections.map(s => `<option value="${s.id}">${s.name}</option>`).join("")
+        : `<option value="">No sections in your congregation yet</option>`;
     } else {
       // Elder-in-charge / Elder / Steward: locked to their own section.
       const mySection = sectionsCache.find(s => s.id === currentUser.section_id);
@@ -1661,10 +1679,18 @@
 
   document.getElementById("lp_role").addEventListener("change", (e) => {
     const role = e.target.value;
-    document.getElementById("lp_section_wrap").style.display = (role === "Minister-in-charge" || role === "Member") ? "none" : "block";
+    document.getElementById("lp_congregation_wrap").style.display = EXECUTIVE_ROLES.includes(role) ? "block" : "none";
+    document.getElementById("lp_section_wrap").style.display = (role === "Minister-in-charge" || role === "Member" || EXECUTIVE_ROLES.includes(role)) ? "none" : "block";
     document.getElementById("lp_member_wrap").style.display = (role === "Member") ? "block" : "none";
+    if (EXECUTIVE_ROLES.includes(role)) populateLpCongregation();
     if (role === "Member") populateLpMember();
   });
+
+  function populateLpCongregation() {
+    const select = document.getElementById("lp_congregation");
+    select.innerHTML = congregationsCache.map(c => `<option value="${c.id}">${c.name}</option>`).join("")
+      || `<option value="">No congregations yet</option>`;
+  }
 
   function populateLpSection() {
     const select = document.getElementById("lp_section");
@@ -1705,16 +1731,18 @@
     const password = document.getElementById("lp_password").value;
     const sectionId = document.getElementById("lp_section").value;
     const memberId = document.getElementById("lp_member").value;
+    const execCongregationId = document.getElementById("lp_congregation").value;
 
     if (!displayName || !email || !role) { setMsg(msg, "Fill in a display name, email, and role.", true); return; }
     if (!password) { setMsg(msg, "Click Generate to create a password first.", true); return; }
     if (role === "Member" && !memberId) { setMsg(msg, "Choose which member record this login belongs to.", true); return; }
+    if (EXECUTIVE_ROLES.includes(role) && !execCongregationId) { setMsg(msg, "Choose which congregation this login covers.", true); return; }
 
     const { data: existing } = await supabaseClient.from("users").select("id").eq("email", email).maybeSingle();
     if (existing) { setMsg(msg, `"${email}" is already linked to a login.`, true); return; }
 
     const section = sectionsCache.find(s => s.id == sectionId);
-    const isSectionRole = !(role === "Minister-in-charge" || role === "Member");
+    const isSectionRole = !(role === "Minister-in-charge" || role === "Member" || EXECUTIVE_ROLES.includes(role));
 
     btn.disabled = true;
     btn.textContent = "Creating...";
@@ -1724,7 +1752,7 @@
         email, password, username: displayName, role,
         member_id: role === "Member" ? memberId : null,
         section_id: isSectionRole ? (sectionId || null) : null,
-        congregation_id: isSectionRole ? (section ? section.congregation_id : null) : null
+        congregation_id: EXECUTIVE_ROLES.includes(role) ? execCongregationId : (isSectionRole ? (section ? section.congregation_id : null) : null)
       }
     });
 
