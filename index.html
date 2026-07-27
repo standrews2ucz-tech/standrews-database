@@ -608,10 +608,10 @@
     <!-- ---------- PEOPLE PANEL (Admin only) ---------- -->
     <div class="panel" id="peoplePanel">
 
-      <div class="subhead">Create a login — step 1</div>
+      <div class="subhead">Create a login</div>
       <p class="field-note" style="margin-bottom:14px;">
-        Fill this in, generate a password, then follow the instructions below to create the account in Supabase.
-        This can't be done automatically from here — see the note under "How this works" if you're curious why.
+        Fill this in, generate a password, and click Create — the login is created and ready immediately.
+        Give the person their email and password directly; they'll use both to sign in.
       </p>
       <form id="loginPrepForm" class="form-grid">
         <div>
@@ -650,31 +650,9 @@
         </div>
         <div class="field-full">
           <div class="msg" id="loginPrepMsg"></div>
-          <button type="submit" id="loginPrepBtn">Prepare login details</button>
+          <button type="submit" id="loginPrepBtn">Create login</button>
         </div>
       </form>
-
-      <div class="empty-state" id="loginInstructions" style="display:none; text-align:left; margin-top:16px;">
-        <strong>Now create the account in Supabase:</strong>
-        <ol style="margin:10px 0 0; padding-left:20px; line-height:1.8;">
-          <li>Go to Supabase → Authentication → Users → Add user.</li>
-          <li>Email: <code id="li_email"></code></li>
-          <li>Password: <code id="li_password"></code></li>
-          <li>Check "Auto confirm user?", then Create user.</li>
-          <li>Copy the new user's UID and paste it below.</li>
-          <li>Give this person their email and password directly — they'll use both to sign in.</li>
-        </ol>
-      </div>
-
-      <div class="subhead">Link the account — step 2</div>
-      <div class="inline-row">
-        <div>
-          <label for="lp_uid">Supabase User UID</label>
-          <input type="text" id="lp_uid" placeholder="paste the UID here">
-        </div>
-        <button type="button" id="lp_linkBtn">Link account</button>
-      </div>
-      <div class="msg" id="linkMsg"></div>
 
       <div class="subhead">Existing logins</div>
       <table class="data-table" id="usersTable">
@@ -1706,56 +1684,45 @@
   document.getElementById("loginPrepForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const msg = document.getElementById("loginPrepMsg");
+    const btn = document.getElementById("loginPrepBtn");
+
+    const displayName = document.getElementById("lp_displayname").value.trim();
     const email = document.getElementById("lp_email").value.trim().toLowerCase();
     const role = document.getElementById("lp_role").value;
     const password = document.getElementById("lp_password").value;
+    const sectionId = document.getElementById("lp_section").value;
+    const memberId = document.getElementById("lp_member").value;
 
-    if (!email || !role) { setMsg(msg, "Fill in an email and role.", true); return; }
+    if (!displayName || !email || !role) { setMsg(msg, "Fill in a display name, email, and role.", true); return; }
     if (!password) { setMsg(msg, "Click Generate to create a password first.", true); return; }
+    if (role === "Member" && !memberId) { setMsg(msg, "Choose which member record this login belongs to.", true); return; }
 
     const { data: existing } = await supabaseClient.from("users").select("id").eq("email", email).maybeSingle();
     if (existing) { setMsg(msg, `"${email}" is already linked to a login.`, true); return; }
 
-    document.getElementById("li_email").textContent = email;
-    document.getElementById("li_password").textContent = password;
-    document.getElementById("loginInstructions").style.display = "block";
-    setMsg(msg, "Details ready — follow the steps below, then link the account.", false);
-  });
-
-  document.getElementById("lp_linkBtn").addEventListener("click", async () => {
-    const msg = document.getElementById("linkMsg");
-    const displayName = document.getElementById("lp_displayname").value.trim();
-    const email = document.getElementById("lp_email").value.trim().toLowerCase();
-    const role = document.getElementById("lp_role").value;
-    const sectionId = document.getElementById("lp_section").value;
-    const memberId = document.getElementById("lp_member").value;
-    const uid = document.getElementById("lp_uid").value.trim();
-
-    if (!displayName || !email || !role) { setMsg(msg, "Fill in step 1 first.", true); return; }
-    if (!uid) { setMsg(msg, "Paste the UID from Supabase.", true); return; }
-    if (role === "Member" && !memberId) { setMsg(msg, "Choose which member record this login belongs to.", true); return; }
-
     const section = sectionsCache.find(s => s.id == sectionId);
     const isSectionRole = !(role === "Minister-in-charge" || role === "Member");
 
-    const record = {
-      auth_id: uid,
-      username: displayName,
-      email: email,
-      role: role,
-      member_id: role === "Member" ? memberId : null,
-      section_id: isSectionRole ? (sectionId || null) : null,
-      congregation_id: isSectionRole ? (section ? section.congregation_id : null) : null
-    };
+    btn.disabled = true;
+    btn.textContent = "Creating...";
 
-    const { error } = await supabaseClient.from("users").insert(record);
-    if (error) {
-      setMsg(msg, "Error: " + error.message, true);
+    const { data, error } = await supabaseClient.functions.invoke("admin-create-user", {
+      body: {
+        email, password, username: displayName, role,
+        member_id: role === "Member" ? memberId : null,
+        section_id: isSectionRole ? (sectionId || null) : null,
+        congregation_id: isSectionRole ? (section ? section.congregation_id : null) : null
+      }
+    });
+
+    btn.disabled = false;
+    btn.textContent = "Create login";
+
+    if (error || (data && data.error)) {
+      setMsg(msg, "Error: " + (data && data.error ? data.error : error.message), true);
     } else {
-      setMsg(msg, `"${displayName}" linked successfully.`, false);
+      setMsg(msg, `Created. Give "${displayName}" these to sign in — Email: ${email} / Password: ${password}`, false);
       document.getElementById("loginPrepForm").reset();
-      document.getElementById("lp_uid").value = "";
-      document.getElementById("loginInstructions").style.display = "none";
       await refreshUsersTable();
     }
   });
