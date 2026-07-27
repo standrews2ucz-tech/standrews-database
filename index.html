@@ -1681,6 +1681,19 @@
       : `<option value="">No members yet</option>`;
   }
 
+  // supabase-js only gives a generic "non-2xx status code" message by default --
+  // this reads the actual error text our Edge Functions send back in their body.
+  async function extractFunctionError(error, data) {
+    if (data && data.error) return data.error;
+    if (error && error.context && typeof error.context.json === "function") {
+      try {
+        const body = await error.context.json();
+        if (body && body.error) return body.error;
+      } catch (e) { /* body wasn't JSON, fall through */ }
+    }
+    return error ? error.message : "Unknown error";
+  }
+
   document.getElementById("loginPrepForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const msg = document.getElementById("loginPrepMsg");
@@ -1719,7 +1732,8 @@
     btn.textContent = "Create login";
 
     if (error || (data && data.error)) {
-      setMsg(msg, "Error: " + (data && data.error ? data.error : error.message), true);
+      const detail = await extractFunctionError(error, data);
+      setMsg(msg, "Error: " + detail, true);
     } else {
       setMsg(msg, `Created. Give "${displayName}" these to sign in — Email: ${email} / Password: ${password}`, false);
       document.getElementById("loginPrepForm").reset();
@@ -1737,7 +1751,8 @@
     });
 
     if (error || (data && data.error)) {
-      alert("Error resetting password: " + (data && data.error ? data.error : error.message));
+      const detail = await extractFunctionError(error, data);
+      alert("Error resetting password: " + detail);
     } else {
       alert(`Password for "${name}" has been changed. Share it with them directly -- they'll use it with their email on the login screen.`);
     }
