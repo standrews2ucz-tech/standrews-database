@@ -2528,22 +2528,54 @@
     document.getElementById("reportResult").style.display = "block";
   }
 
+  function renderPersonalDataPDF(doc, report) {
+    if (!report.rows.length) {
+      doc.text(report.title, 14, 15);
+      doc.setFontSize(11);
+      doc.text("No data for this selection.", 14, 25);
+      return;
+    }
+
+    report.rows.forEach((row, idx) => {
+      if (idx > 0) doc.addPage();
+      doc.setFontSize(14);
+      doc.text(row[0] || "Member", 14, 15);
+      doc.setFontSize(9);
+      doc.text(report.title, 14, 21);
+
+      const bodyRows = report.columns.map((col, i) => [col, row[i] != null && row[i] !== "" ? String(row[i]) : "—"]);
+      doc.autoTable({
+        startY: 27,
+        body: bodyRows,
+        theme: "plain",
+        styles: { fontSize: 10, cellPadding: 3, lineColor: [230, 226, 210], lineWidth: 0.2 },
+        columnStyles: { 0: { fontStyle: "bold", cellWidth: 55 }, 1: { cellWidth: "auto" } }
+      });
+    });
+  }
+
   document.getElementById("rep_downloadPdfBtn").addEventListener("click", () => {
     if (!currentReport) return;
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    doc.text(currentReport.title, 14, 15);
-    const colCount = currentReport.columns.length;
-    doc.autoTable({
-      head: [currentReport.columns],
-      body: currentReport.rows,
-      startY: 20,
-      margin: { left: 8, right: 8 },
-      styles: { fontSize: 8, cellPadding: 1.5, overflow: "linebreak" },
-      headStyles: { fontSize: 8 },
-      horizontalPageBreak: colCount > 8,
-      horizontalPageBreakRepeat: 0
-    });
+
+    if (currentReport.title.startsWith("Personal Data")) {
+      renderPersonalDataPDF(doc, currentReport);
+    } else {
+      doc.text(currentReport.title, 14, 15);
+      const colCount = currentReport.columns.length;
+      doc.autoTable({
+        head: [currentReport.columns],
+        body: currentReport.rows,
+        startY: 20,
+        margin: { left: 8, right: 8 },
+        styles: { fontSize: 8, cellPadding: 1.5, overflow: "linebreak" },
+        headStyles: { fontSize: 8 },
+        horizontalPageBreak: colCount > 8,
+        horizontalPageBreakRepeat: 0
+      });
+    }
+
     doc.save(currentReport.title.replace(/[^a-z0-9]/gi, "_") + ".pdf");
   });
 
